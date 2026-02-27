@@ -1,0 +1,4 @@
+{"type":"system","sessionId":"sess-simple-001","cwd":"/home/user/project"}
+{"type":"user","sessionId":"sess-simple-001","uuid":"prompt-1","timestamp":"2025-06-01T10:00:00Z","message":{"role":"user","content":"Hello Claude, help me fix the bug"}}
+{"type":"assistant","sessionId":"sess-simple-001","message":{"role":"assistant","content":"Sure, I'll help you fix the bug."}}
+{"type":"user","sessionId":"sess-simple-001","uuid":"prompt-2","timestamp":"2025-06-01T10:05:00Z","message":{"role":"user","content":"Now add tests for the module"}}

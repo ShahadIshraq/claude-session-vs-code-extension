@@ -1,0 +1,3 @@
+{"type":"system","sessionId":"sess-custom-001","cwd":"/home/user/project"}
+{"type":"user","sessionId":"sess-custom-001","uuid":"prompt-1","timestamp":"2025-06-01T10:00:00Z","message":{"role":"user","content":"Build the API endpoint"}}
+{"type":"custom-title","sessionId":"sess-custom-001","customTitle":"My Custom Title"}

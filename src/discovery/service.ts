@@ -5,7 +5,14 @@ import * as path from "path";
 import * as vscode from "vscode";
 import { SessionNode } from "../models";
 import { buildTitle } from "./title";
-import { CachedPromptList, CachedSessionMeta, DiscoveryResult, ISessionDiscoveryService, SessionPrompt, TranscriptCandidate } from "./types";
+import {
+  CachedPromptList,
+  CachedSessionMeta,
+  DiscoveryResult,
+  ISessionDiscoveryService,
+  SessionPrompt,
+  TranscriptCandidate
+} from "./types";
 import { collectTranscriptFiles, exists } from "./scan";
 import { parseTranscriptFile, matchWorkspacePrecomputed, precomputeWorkspacePaths } from "./parseSession";
 import { parseAllUserPrompts } from "./parsePrompts";
@@ -17,8 +24,11 @@ export class ClaudeSessionDiscoveryService implements ISessionDiscoveryService {
   private readonly promptCacheByPath = new Map<string, CachedPromptList>();
   private readonly sessionCacheByPath = new Map<string, CachedSessionMeta>();
 
-  public constructor(private readonly outputChannel: vscode.OutputChannel) {
-    this.projectsRoot = path.join(os.homedir(), ".claude", "projects");
+  public constructor(
+    private readonly outputChannel: vscode.OutputChannel,
+    projectsRoot?: string
+  ) {
+    this.projectsRoot = projectsRoot ?? path.join(os.homedir(), ".claude", "projects");
   }
 
   public async discover(workspaceFolders: readonly vscode.WorkspaceFolder[]): Promise<DiscoveryResult> {
@@ -95,17 +105,12 @@ export class ClaudeSessionDiscoveryService implements ISessionDiscoveryService {
     return { sessionsByWorkspace };
   }
 
-  private async processFilesBatched(
-    files: string[],
-    log: (msg: string) => void
-  ): Promise<TranscriptCandidate[]> {
+  private async processFilesBatched(files: string[], log: (msg: string) => void): Promise<TranscriptCandidate[]> {
     const candidates: TranscriptCandidate[] = [];
 
     for (let i = 0; i < files.length; i += BATCH_CONCURRENCY) {
       const batch = files.slice(i, i + BATCH_CONCURRENCY);
-      const results = await Promise.allSettled(
-        batch.map((file) => this.processOneFile(file, log))
-      );
+      const results = await Promise.allSettled(batch.map((file) => this.processOneFile(file, log)));
 
       for (const result of results) {
         if (result.status === "fulfilled" && result.value) {
@@ -119,10 +124,7 @@ export class ClaudeSessionDiscoveryService implements ISessionDiscoveryService {
     return candidates;
   }
 
-  private async processOneFile(
-    file: string,
-    log: (msg: string) => void
-  ): Promise<TranscriptCandidate | null> {
+  private async processOneFile(file: string, log: (msg: string) => void): Promise<TranscriptCandidate | null> {
     let stat: fs.Stats;
     try {
       stat = await fsp.stat(file);

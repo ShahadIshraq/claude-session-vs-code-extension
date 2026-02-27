@@ -17,9 +17,7 @@ export function run(): Promise<void> {
         return;
       }
 
-      files
-        .filter((f) => f.endsWith(".test.js"))
-        .forEach((f) => mocha.addFile(path.resolve(testsRoot, f)));
+      files.filter((f) => f.endsWith(".test.js")).forEach((f) => mocha.addFile(path.resolve(testsRoot, f)));
 
       try {
         mocha.run((failures: number) => {

@@ -48,6 +48,7 @@ npm run watch
 4. Open this folder in VS Code and press `F5` to launch the Extension Development Host.
 
 5. In the Extension Host window:
+
 - Open the `Claude Sessions` icon in the Activity Bar, or
 - Run `Focus Claude Sessions View` from Command Palette.
 
@@ -62,6 +63,7 @@ npx @vscode/vsce package
 ```
 
 This creates a `.vsix` file such as:
+
 - `vscode-claude-sessions-0.0.1.vsix`
 
 ### Install VSIX

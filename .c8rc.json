@@ -1,0 +1,5 @@
+{
+  "reporter": ["text", "lcov"],
+  "include": ["out/**/*.js"],
+  "exclude": ["out/test/**"]
+}

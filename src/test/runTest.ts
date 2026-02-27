@@ -6,7 +6,15 @@ async function main(): Promise<void> {
     const extensionDevelopmentPath = path.resolve(__dirname, "../../");
     const extensionTestsPath = path.resolve(__dirname, "./suite/index");
 
-    await runTests({ extensionDevelopmentPath, extensionTestsPath });
+    await runTests({
+      extensionDevelopmentPath,
+      extensionTestsPath,
+      launchArgs: ["--disable-extensions"],
+      extensionTestsEnv: {
+        ...process.env,
+        ...(process.env.NODE_V8_COVERAGE ? { NODE_V8_COVERAGE: process.env.NODE_V8_COVERAGE } : {})
+      }
+    });
   } catch (err) {
     console.error("Failed to run tests", err);
     process.exit(1);

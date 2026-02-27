@@ -11,9 +11,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const treeProvider = new ClaudeSessionsTreeDataProvider(discovery);
   const promptPreviewProvider = new PromptPreviewDocumentProvider();
   outputChannel.appendLine("[lifecycle] Claude Sessions extension activated.");
-  outputChannel.appendLine(
-    `[lifecycle] workspaceFolders=${String(vscode.workspace.workspaceFolders?.length ?? 0)}`
-  );
+  outputChannel.appendLine(`[lifecycle] workspaceFolders=${String(vscode.workspace.workspaceFolders?.length ?? 0)}`);
 
   context.subscriptions.push(outputChannel);
   context.subscriptions.push(promptPreviewProvider);
@@ -36,12 +34,20 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   });
   context.subscriptions.push(explorerTreeView);
   context.subscriptions.push(sidebarTreeView);
-  context.subscriptions.push(explorerTreeView.onDidChangeVisibility((e) => {
-    if (e.visible) { lazyRefresh(); }
-  }));
-  context.subscriptions.push(sidebarTreeView.onDidChangeVisibility((e) => {
-    if (e.visible) { lazyRefresh(); }
-  }));
+  context.subscriptions.push(
+    explorerTreeView.onDidChangeVisibility((e) => {
+      if (e.visible) {
+        lazyRefresh();
+      }
+    })
+  );
+  context.subscriptions.push(
+    sidebarTreeView.onDidChangeVisibility((e) => {
+      if (e.visible) {
+        lazyRefresh();
+      }
+    })
+  );
 
   context.subscriptions.push(
     vscode.commands.registerCommand("claudeSessions.refresh", async () => {
@@ -139,7 +145,7 @@ async function confirmDangerousLaunch(session: SessionNode): Promise<boolean> {
   return response === acceptLabel;
 }
 
-function buildPromptPreviewDocument(node: SessionPromptNode): string {
+export function buildPromptPreviewDocument(node: SessionPromptNode): string {
   const header = [
     `# ${escapeMarkdown(node.sessionTitle)}`,
     "",
@@ -157,7 +163,7 @@ function buildPromptPreviewDocument(node: SessionPromptNode): string {
   return header.join("\n");
 }
 
-function escapeMarkdown(value: string): string {
+export function escapeMarkdown(value: string): string {
   return value.replace(/([\\`*_{}[\]()#+\-.!|>])/g, "\\$1");
 }
 

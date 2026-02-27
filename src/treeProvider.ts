@@ -151,7 +151,7 @@ export class ClaudeSessionsTreeDataProvider implements vscode.TreeDataProvider<C
   }
 }
 
-function formatRelativeTime(timestampMs: number): string {
+export function formatRelativeTime(timestampMs: number): string {
   const now = Date.now();
   const diffMs = timestampMs - now;
   const absMs = Math.abs(diffMs);
@@ -185,7 +185,7 @@ function formatRelativeTime(timestampMs: number): string {
   return rtf.format(Math.round(diffMs / year), "year");
 }
 
-function formatAgeToken(timestampMs: number): string {
+export function formatAgeToken(timestampMs: number): string {
   const now = Date.now();
   const diffMs = timestampMs - now;
   const absMs = Math.abs(diffMs);
@@ -227,7 +227,7 @@ function formatAgeToken(timestampMs: number): string {
   return isPast ? `${value}${unit} ago` : `in ${value}${unit}`;
 }
 
-function truncateForTreeLabel(value: string, maxLength: number): string {
+export function truncateForTreeLabel(value: string, maxLength: number): string {
   const normalized = value.replace(/\s+/g, " ").trim();
   if (normalized.length <= maxLength) {
     return normalized;

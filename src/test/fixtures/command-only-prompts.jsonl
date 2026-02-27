@@ -1,0 +1,4 @@
+{"type":"system","sessionId":"sess-commands-001","cwd":"/home/user/project"}
+{"type":"user","sessionId":"sess-commands-001","uuid":"prompt-1","timestamp":"2025-06-01T10:00:00Z","message":{"role":"user","content":"<command-name>/model</command-name>\n<command-message>Switch model</command-message>"}}
+{"type":"user","sessionId":"sess-commands-001","uuid":"prompt-2","timestamp":"2025-06-01T10:01:00Z","message":{"role":"user","content":"<local-command-caveat>caveat text</local-command-caveat>"}}
+{"type":"user","sessionId":"sess-commands-001","uuid":"prompt-3","timestamp":"2025-06-01T10:02:00Z","message":{"role":"user","content":"agentId: some-agent-123"}}

@@ -6,7 +6,10 @@ import { isNormalizedPathWithin, isPathWithin, normalizeFsPath } from "./pathUti
 import { chooseSessionTitleRaw, parseRenameCommandArgs, parseRenameStdoutTitle, toNonEmptySingleLine } from "./title";
 import { ParsedSession } from "./types";
 
-export async function parseTranscriptFile(transcriptPath: string, log: (msg: string) => void): Promise<ParsedSession | null> {
+export async function parseTranscriptFile(
+  transcriptPath: string,
+  log: (msg: string) => void
+): Promise<ParsedSession | null> {
   const stream = fs.createReadStream(transcriptPath, { encoding: "utf8" });
   const rl = readline.createInterface({ input: stream, crlfDelay: Infinity });
 
@@ -90,11 +93,12 @@ export async function parseTranscriptFile(transcriptPath: string, log: (msg: str
   return {
     sessionId,
     cwd,
-    titleSourceRaw: chooseSessionTitleRaw({
-      latestExplicitTitle,
-      firstPromptRaw,
-      firstUserRaw
-    }) ?? ""
+    titleSourceRaw:
+      chooseSessionTitleRaw({
+        latestExplicitTitle,
+        firstPromptRaw,
+        firstUserRaw
+      }) ?? ""
   };
 }
 

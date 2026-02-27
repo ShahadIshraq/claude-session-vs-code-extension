@@ -1,0 +1,5 @@
+{invalid json here
+{"type":"system","sessionId":"sess-malformed-001","cwd":"/home/user/project"}
+not json at all!!!
+{"type":"user","sessionId":"sess-malformed-001","uuid":"prompt-1","timestamp":"2025-06-01T10:00:00Z","message":{"role":"user","content":"Valid prompt after malformed lines"}}
+{truncated

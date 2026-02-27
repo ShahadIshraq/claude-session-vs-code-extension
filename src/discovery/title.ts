@@ -11,7 +11,10 @@ export function buildTitle(rawPrompt: string, sessionId: string): string {
     return fallback;
   }
 
-  const sanitized = firstLine.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  const sanitized = firstLine
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
   if (!sanitized) {
     return fallback;
   }

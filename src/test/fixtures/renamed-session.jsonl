@@ -1,0 +1,4 @@
+{"type":"system","sessionId":"sess-renamed-001","cwd":"/home/user/project"}
+{"type":"user","sessionId":"sess-renamed-001","uuid":"prompt-1","timestamp":"2025-06-01T10:00:00Z","message":{"role":"user","content":"Implement the login feature"}}
+{"type":"user","sessionId":"sess-renamed-001","uuid":"prompt-2","timestamp":"2025-06-01T10:10:00Z","message":{"role":"user","content":"<command-name>/rename</command-name>\n<command-message>rename</command-message>\n<command-args>My Renamed Session</command-args>"}}
+{"type":"user","sessionId":"sess-renamed-001","uuid":"prompt-3","timestamp":"2025-06-01T10:10:01Z","message":{"role":"user","content":"<local-command-stdout>Session renamed to: My Renamed Session</local-command-stdout>"}}

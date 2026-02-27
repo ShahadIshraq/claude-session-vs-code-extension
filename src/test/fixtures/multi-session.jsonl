@@ -1,0 +1,4 @@
+{"type":"system","sessionId":"sess-multi-first","cwd":"/home/user/project-a"}
+{"type":"user","sessionId":"sess-multi-first","uuid":"prompt-1","timestamp":"2025-06-01T10:00:00Z","message":{"role":"user","content":"First session prompt"}}
+{"type":"system","sessionId":"sess-multi-second","cwd":"/home/user/project-b"}
+{"type":"user","sessionId":"sess-multi-second","uuid":"prompt-2","timestamp":"2025-06-01T11:00:00Z","message":{"role":"user","content":"Second session prompt"}}

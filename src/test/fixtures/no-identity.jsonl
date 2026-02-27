@@ -1,0 +1,2 @@
+{"type":"user","message":{"role":"user","content":"A prompt with no session identity"}}
+{"type":"assistant","message":{"role":"assistant","content":"Response without identity"}}

@@ -1,0 +1,5 @@
+{"type":"system","sessionId":"sess-titles-001","cwd":"/home/user/project"}
+{"type":"user","sessionId":"sess-titles-001","uuid":"prompt-1","timestamp":"2025-06-01T10:00:00Z","message":{"role":"user","content":"Initial user prompt"}}
+{"type":"custom-title","sessionId":"sess-titles-001","customTitle":"Custom Title Set Early"}
+{"type":"user","sessionId":"sess-titles-001","uuid":"prompt-2","timestamp":"2025-06-01T10:05:00Z","message":{"role":"user","content":"<command-name>/rename</command-name>\n<command-message>rename</command-message>\n<command-args>Final Renamed Title</command-args>"}}
+{"type":"user","sessionId":"sess-titles-001","uuid":"prompt-3","timestamp":"2025-06-01T10:05:01Z","message":{"role":"user","content":"<local-command-stdout>Session renamed to: Final Renamed Title</local-command-stdout>"}}

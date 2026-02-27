@@ -4,7 +4,11 @@ import { extractText, isDisplayableUserPrompt, isRecord } from "./content";
 import { buildTitle } from "./title";
 import { SessionPrompt } from "./types";
 
-export async function parseAllUserPrompts(transcriptPath: string, fallbackSessionId: string, log: (msg: string) => void): Promise<SessionPrompt[]> {
+export async function parseAllUserPrompts(
+  transcriptPath: string,
+  fallbackSessionId: string,
+  log: (msg: string) => void
+): Promise<SessionPrompt[]> {
   const stream = fs.createReadStream(transcriptPath, { encoding: "utf8" });
   const rl = readline.createInterface({ input: stream, crlfDelay: Infinity });
 
@@ -46,9 +50,7 @@ export async function parseAllUserPrompts(transcriptPath: string, fallbackSessio
       const parsedTimestamp = timestampIso ? Date.parse(timestampIso) : Number.NaN;
       const timestampMs = Number.isFinite(parsedTimestamp) ? parsedTimestamp : undefined;
       const sessionId =
-        typeof parsed.sessionId === "string" && parsed.sessionId.trim() !== ""
-          ? parsed.sessionId
-          : fallbackSessionId;
+        typeof parsed.sessionId === "string" && parsed.sessionId.trim() !== "" ? parsed.sessionId : fallbackSessionId;
 
       prompts.push({
         promptId:

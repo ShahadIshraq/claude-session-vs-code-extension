@@ -21,12 +21,18 @@ describe("discovery helpers", () => {
   });
 
   it("extractText handles content arrays", () => {
-    const content = [{ type: "text", text: "line 1" }, { type: "text", text: "line 2" }];
+    const content = [
+      { type: "text", text: "line 1" },
+      { type: "text", text: "line 2" }
+    ];
     assert.strictEqual(extractText(content), "line 1\nline 2");
   });
 
   it("buildTitle uses sanitized first line", () => {
-    const title = buildTitle("<command-message>run checks</command-message>\nnext", "12345678-aaaa-bbbb-cccc-1234567890ab");
+    const title = buildTitle(
+      "<command-message>run checks</command-message>\nnext",
+      "12345678-aaaa-bbbb-cccc-1234567890ab"
+    );
     assert.strictEqual(title, "run checks");
   });
 
