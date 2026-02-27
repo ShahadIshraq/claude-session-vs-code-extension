@@ -29,6 +29,11 @@ export interface CachedPromptList {
   readonly prompts: SessionPrompt[];
 }
 
+export interface CachedSessionMeta {
+  readonly mtimeMs: number;
+  readonly parsed: ParsedSession;
+}
+
 export interface TranscriptRecord {
   readonly type?: string;
   readonly sessionId?: string;

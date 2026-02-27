@@ -20,15 +20,32 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   context.subscriptions.push(
     vscode.workspace.registerTextDocumentContentProvider("claude-sessions-prompt", promptPreviewProvider)
   );
-  context.subscriptions.push(
-    vscode.window.registerTreeDataProvider("claudeSessionsExplorer", treeProvider)
-  );
-  context.subscriptions.push(
-    vscode.window.registerTreeDataProvider("claudeSessionsSidebarView", treeProvider)
-  );
+  let hasRefreshed = false;
+  const lazyRefresh = async () => {
+    if (!hasRefreshed) {
+      hasRefreshed = true;
+      await treeProvider.refresh();
+    }
+  };
+
+  const explorerTreeView = vscode.window.createTreeView("claudeSessionsExplorer", {
+    treeDataProvider: treeProvider
+  });
+  const sidebarTreeView = vscode.window.createTreeView("claudeSessionsSidebarView", {
+    treeDataProvider: treeProvider
+  });
+  context.subscriptions.push(explorerTreeView);
+  context.subscriptions.push(sidebarTreeView);
+  context.subscriptions.push(explorerTreeView.onDidChangeVisibility((e) => {
+    if (e.visible) { lazyRefresh(); }
+  }));
+  context.subscriptions.push(sidebarTreeView.onDidChangeVisibility((e) => {
+    if (e.visible) { lazyRefresh(); }
+  }));
 
   context.subscriptions.push(
     vscode.commands.registerCommand("claudeSessions.refresh", async () => {
+      hasRefreshed = true;
       await treeProvider.refresh();
     })
   );
@@ -88,12 +105,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   context.subscriptions.push(
     vscode.workspace.onDidChangeWorkspaceFolders(async () => {
       outputChannel.appendLine("[lifecycle] Workspace folders changed. Refreshing tree.");
+      hasRefreshed = true;
       await treeProvider.refresh();
     })
   );
-
-  outputChannel.appendLine("[discovery] Initial refresh.");
-  await treeProvider.refresh();
 }
 
 export function deactivate(): void {
@@ -146,6 +161,8 @@ function escapeMarkdown(value: string): string {
   return value.replace(/([\\`*_{}[\]()#+\-.!|>])/g, "\\$1");
 }
 
+const MAX_PREVIEW_ENTRIES = 50;
+
 class PromptPreviewDocumentProvider implements vscode.TextDocumentContentProvider, vscode.Disposable {
   private readonly onDidChangeEmitter = new vscode.EventEmitter<vscode.Uri>();
   private readonly contentByUri = new Map<string, string>();
@@ -154,13 +171,33 @@ class PromptPreviewDocumentProvider implements vscode.TextDocumentContentProvide
 
   public setContent(key: string, content: string): vscode.Uri {
     const uri = vscode.Uri.parse(`claude-sessions-prompt:/${encodeURIComponent(key)}.md`);
-    this.contentByUri.set(uri.toString(), content);
+    const uriKey = uri.toString();
+
+    // Delete-then-reinsert for LRU ordering
+    this.contentByUri.delete(uriKey);
+    this.contentByUri.set(uriKey, content);
+
+    // Evict oldest entries when over limit
+    while (this.contentByUri.size > MAX_PREVIEW_ENTRIES) {
+      const oldest = this.contentByUri.keys().next().value;
+      if (oldest !== undefined) {
+        this.contentByUri.delete(oldest);
+      }
+    }
+
     this.onDidChangeEmitter.fire(uri);
     return uri;
   }
 
   public provideTextDocumentContent(uri: vscode.Uri): string {
-    return this.contentByUri.get(uri.toString()) ?? "# Prompt preview is unavailable.";
+    const uriKey = uri.toString();
+    const content = this.contentByUri.get(uriKey);
+    if (content !== undefined) {
+      // Delete-then-reinsert for LRU freshness on read
+      this.contentByUri.delete(uriKey);
+      this.contentByUri.set(uriKey, content);
+    }
+    return content ?? "# Prompt preview is unavailable.";
   }
 
   public dispose(): void {

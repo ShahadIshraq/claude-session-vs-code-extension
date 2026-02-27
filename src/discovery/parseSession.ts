@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as readline from "readline";
 import * as vscode from "vscode";
 import { extractText, isDisplayableUserPrompt, isRecord } from "./content";
-import { isPathWithin, normalizeFsPath } from "./pathUtils";
+import { isNormalizedPathWithin, isPathWithin, normalizeFsPath } from "./pathUtils";
 import { chooseSessionTitleRaw, parseRenameCommandArgs, parseRenameStdoutTitle, toNonEmptySingleLine } from "./title";
 import { ParsedSession } from "./types";
 
@@ -108,4 +108,33 @@ export function matchWorkspace(
     .sort((a, b) => b.uri.fsPath.length - a.uri.fsPath.length);
 
   return matching[0];
+}
+
+export interface NormalizedWorkspaceFolder {
+  readonly folder: vscode.WorkspaceFolder;
+  readonly normalizedPath: string;
+}
+
+export function precomputeWorkspacePaths(
+  workspaceFolders: readonly vscode.WorkspaceFolder[]
+): NormalizedWorkspaceFolder[] {
+  return workspaceFolders
+    .map((folder) => ({
+      folder,
+      normalizedPath: normalizeFsPath(folder.uri.fsPath)
+    }))
+    .sort((a, b) => b.normalizedPath.length - a.normalizedPath.length);
+}
+
+export function matchWorkspacePrecomputed(
+  sessionCwd: string,
+  precomputed: readonly NormalizedWorkspaceFolder[]
+): vscode.WorkspaceFolder | undefined {
+  const normalizedCwd = normalizeFsPath(sessionCwd);
+  for (const entry of precomputed) {
+    if (isNormalizedPathWithin(normalizedCwd, entry.normalizedPath)) {
+      return entry.folder;
+    }
+  }
+  return undefined;
 }
