@@ -6,3 +6,8 @@ src/**
 README.md
 **/*.map
 **/*.ts
+.github/**
+.husky/**
+.prettierrc
+eslint.config.mjs
+plannind/**
