@@ -2,9 +2,10 @@
   "name": "vscode-claude-sessions",
   "displayName": "Claude Sessions Explorer",
   "description": "Browse and resume Claude Code sessions from the Explorer sidebar.",
-  "version": "0.0.1",
-  "publisher": "shahad",
+  "version": "0.0.2",
+  "publisher": "ShahadIshraq",
   "license": "MIT",
+  "icon": "media/icon.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/ShahadIshraq/claude-session-vs-code-extension.git"

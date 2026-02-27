@@ -20,6 +20,10 @@ jobs:
       - run: npm ci
       - run: npx vsce package
 
+      - run: npx vsce publish
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
       - uses: actions/upload-artifact@v4
         with:
           name: vsix
