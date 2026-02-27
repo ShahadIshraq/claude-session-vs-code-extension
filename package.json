@@ -1,0 +1,157 @@
+{
+  "name": "vscode-claude-sessions",
+  "displayName": "Claude Sessions Explorer",
+  "description": "Browse and resume Claude Code sessions from the Explorer sidebar.",
+  "version": "0.0.1",
+  "publisher": "shahad",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "onView:claudeSessionsExplorer",
+    "onView:claudeSessionsSidebarView",
+    "onCommand:claudeSessions.refresh",
+    "onCommand:claudeSessions.openSession",
+    "onCommand:claudeSessions.openSessionDangerously",
+    "onCommand:claudeSessions.openPromptPreview",
+    "onCommand:claudeSessions.focusView"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "claudeSessions.refresh",
+        "title": "Refresh Claude Sessions",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "claudeSessions.openSession",
+        "title": "Open Claude Session",
+        "icon": {
+          "light": "media/terminal-green.svg",
+          "dark": "media/terminal-green.svg"
+        }
+      },
+      {
+        "command": "claudeSessions.openSessionDangerously",
+        "title": "Open Session (Skip Permissions)",
+        "icon": {
+          "light": "media/terminal-red.svg",
+          "dark": "media/terminal-red.svg"
+        }
+      },
+      {
+        "command": "claudeSessions.openPromptPreview",
+        "title": "Open Prompt Preview",
+        "icon": "$(book)"
+      },
+      {
+        "command": "claudeSessions.focusView",
+        "title": "Focus Claude Sessions View"
+      }
+    ],
+    "views": {
+      "explorer": [
+        {
+          "id": "claudeSessionsExplorer",
+          "name": "Claude Sessions"
+        }
+      ],
+      "claudeSessionsContainer": [
+        {
+          "id": "claudeSessionsSidebarView",
+          "name": "Sessions"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "claudeSessionsContainer",
+          "title": "Claude Sessions",
+          "icon": "media/claude-sessions.svg"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "claudeSessions.refresh",
+          "when": "view == claudeSessionsExplorer",
+          "group": "navigation"
+        },
+        {
+          "command": "claudeSessions.refresh",
+          "when": "view == claudeSessionsSidebarView",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "claudeSessions.openSession",
+          "when": "view == claudeSessionsExplorer && viewItem == claudeSession",
+          "group": "inline"
+        },
+        {
+          "command": "claudeSessions.openSessionDangerously",
+          "when": "view == claudeSessionsExplorer && viewItem == claudeSession",
+          "group": "inline@2"
+        },
+        {
+          "command": "claudeSessions.openPromptPreview",
+          "when": "view == claudeSessionsExplorer && viewItem == claudeSessionPrompt",
+          "group": "inline"
+        },
+        {
+          "command": "claudeSessions.openSession",
+          "when": "view == claudeSessionsSidebarView && viewItem == claudeSession",
+          "group": "inline"
+        },
+        {
+          "command": "claudeSessions.openSessionDangerously",
+          "when": "view == claudeSessionsSidebarView && viewItem == claudeSession",
+          "group": "inline@2"
+        },
+        {
+          "command": "claudeSessions.openPromptPreview",
+          "when": "view == claudeSessionsSidebarView && viewItem == claudeSessionPrompt",
+          "group": "inline"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Claude Sessions",
+      "properties": {
+        "claudeSessions.confirmDangerousSkipPermissions": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show a required warning confirmation before launching Claude with --dangerously-skip-permissions."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts",
+    "pretest": "npm run compile",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.8",
+    "@types/node": "^20.14.10",
+    "@types/vscode": "^1.90.0",
+    "@typescript-eslint/eslint-plugin": "^8.6.0",
+    "@typescript-eslint/parser": "^8.6.0",
+    "@vscode/test-electron": "^2.5.0",
+    "eslint": "^9.10.0",
+    "mocha": "^11.7.5",
+    "typescript": "^5.6.2"
+  }
+}
