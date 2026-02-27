@@ -1,6 +1,14 @@
 import * as assert from "assert";
 import * as path from "path";
-import { buildTitle, extractText, isDisplayableUserPrompt, isPathWithin } from "../../discovery";
+import {
+  buildTitle,
+  chooseSessionTitleRaw,
+  extractText,
+  isDisplayableUserPrompt,
+  isPathWithin,
+  parseRenameCommandArgs,
+  parseRenameStdoutTitle
+} from "../../discovery";
 
 describe("discovery helpers", () => {
   it("extractText handles string content", () => {
@@ -36,5 +44,44 @@ describe("discovery helpers", () => {
     assert.strictEqual(isDisplayableUserPrompt("<command-name>/model</command-name>"), false);
     assert.strictEqual(isDisplayableUserPrompt("agentId: abc123"), false);
     assert.strictEqual(isDisplayableUserPrompt("Implement this feature in phases"), true);
+  });
+
+  it("extracts /rename command args", () => {
+    const title = parseRenameCommandArgs(
+      "<command-name>/rename</command-name>\n<command-message>rename</command-message>\n<command-args>My Session Name</command-args>"
+    );
+    assert.strictEqual(title, "My Session Name");
+  });
+
+  it("extracts generated rename title from command stdout", () => {
+    const title = parseRenameStdoutTitle(
+      "<local-command-stdout>Session and agent renamed to: auto-generated-session-name</local-command-stdout>"
+    );
+    assert.strictEqual(title, "auto-generated-session-name");
+  });
+
+  it("ignores empty /rename args", () => {
+    const title = parseRenameCommandArgs(
+      "<command-name>/rename</command-name>\n<command-message>rename</command-message>\n<command-args></command-args>"
+    );
+    assert.strictEqual(title, undefined);
+  });
+
+  it("prefers latest explicit title over first prompt fallback", () => {
+    const chosen = chooseSessionTitleRaw({
+      latestExplicitTitle: "Renamed Session",
+      firstPromptRaw: "Implement the following plan",
+      firstUserRaw: "Implement the following plan"
+    });
+    assert.strictEqual(chosen, "Renamed Session");
+  });
+
+  it("falls back to first prompt when explicit title is unavailable", () => {
+    const chosen = chooseSessionTitleRaw({
+      latestExplicitTitle: "",
+      firstPromptRaw: "Implement the following plan",
+      firstUserRaw: "Implement the following plan"
+    });
+    assert.strictEqual(chosen, "Implement the following plan");
   });
 });

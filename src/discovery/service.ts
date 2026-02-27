@@ -4,38 +4,11 @@ import * as os from "os";
 import * as path from "path";
 import * as readline from "readline";
 import * as vscode from "vscode";
-import { SessionNode } from "./models";
-
-interface ParsedSession {
-  readonly sessionId: string;
-  readonly cwd: string;
-  readonly firstPromptRaw: string;
-}
-
-export interface SessionPrompt {
-  readonly promptId: string;
-  readonly sessionId: string;
-  readonly promptRaw: string;
-  readonly promptTitle: string;
-  readonly timestampIso?: string;
-  readonly timestampMs?: number;
-}
-
-export interface DiscoveryResult {
-  readonly sessionsByWorkspace: Map<string, SessionNode[]>;
-  readonly globalInfoMessage?: string;
-}
-
-interface TranscriptCandidate {
-  readonly transcriptPath: string;
-  readonly updatedAt: number;
-  readonly parsed: ParsedSession;
-}
-
-interface CachedPromptList {
-  readonly mtimeMs: number;
-  readonly prompts: SessionPrompt[];
-}
+import { SessionNode } from "../models";
+import { extractText, isDisplayableUserPrompt, isRecord } from "./content";
+import { isPathWithin, normalizeFsPath } from "./pathUtils";
+import { buildTitle, chooseSessionTitleRaw, parseRenameCommandArgs, parseRenameStdoutTitle, toNonEmptySingleLine } from "./title";
+import { CachedPromptList, DiscoveryResult, ParsedSession, SessionPrompt, TranscriptCandidate } from "./types";
 
 export class ClaudeSessionDiscoveryService {
   private readonly projectsRoot: string;
@@ -104,7 +77,7 @@ export class ClaudeSessionDiscoveryService {
         sessionId: candidate.parsed.sessionId,
         cwd: candidate.parsed.cwd,
         transcriptPath: candidate.transcriptPath,
-        title: buildTitle(candidate.parsed.firstPromptRaw, candidate.parsed.sessionId),
+        title: buildTitle(candidate.parsed.titleSourceRaw, candidate.parsed.sessionId),
         updatedAt: candidate.updatedAt
       };
 
@@ -211,6 +184,7 @@ export class ClaudeSessionDiscoveryService {
     let cwd: string | undefined;
     let firstPromptRaw: string | undefined;
     let firstUserRaw: string | undefined;
+    let latestExplicitTitle: string | undefined;
 
     try {
       for await (const line of rl) {
@@ -238,6 +212,20 @@ export class ClaudeSessionDiscoveryService {
           cwd = parsed.cwd;
         }
 
+        if (parsed.type === "custom-title") {
+          const customTitle = toNonEmptySingleLine(parsed.customTitle);
+          if (customTitle) {
+            latestExplicitTitle = customTitle;
+          }
+        }
+
+        if (parsed.type === "agent-name") {
+          const agentName = toNonEmptySingleLine(parsed.agentName);
+          if (agentName) {
+            latestExplicitTitle = agentName;
+          }
+        }
+
         if (parsed.type === "user" && parsed.message?.role === "user") {
           const text = extractText(parsed.message.content);
           if (text.trim()) {
@@ -247,11 +235,17 @@ export class ClaudeSessionDiscoveryService {
             if (!firstPromptRaw && isDisplayableUserPrompt(text)) {
               firstPromptRaw = text;
             }
-          }
-        }
 
-        if (sessionId && cwd && firstPromptRaw) {
-          break;
+            const renameArgsTitle = parseRenameCommandArgs(text);
+            if (renameArgsTitle) {
+              latestExplicitTitle = renameArgsTitle;
+            }
+
+            const renameStdoutTitle = parseRenameStdoutTitle(text);
+            if (renameStdoutTitle) {
+              latestExplicitTitle = renameStdoutTitle;
+            }
+          }
         }
       }
     } finally {
@@ -259,15 +253,18 @@ export class ClaudeSessionDiscoveryService {
       stream.close();
     }
 
-    const titlePrompt = firstPromptRaw ?? firstUserRaw;
-    if (!sessionId || !cwd || !titlePrompt) {
+    if (!sessionId || !cwd) {
       return null;
     }
 
     return {
       sessionId,
       cwd,
-      firstPromptRaw: titlePrompt
+      titleSourceRaw: chooseSessionTitleRaw({
+        latestExplicitTitle,
+        firstPromptRaw,
+        firstUserRaw
+      }) ?? ""
     };
   }
 
@@ -358,115 +355,4 @@ export class ClaudeSessionDiscoveryService {
       return false;
     }
   }
-}
-
-interface TranscriptRecord {
-  readonly type?: string;
-  readonly sessionId?: string;
-  readonly cwd?: string;
-  readonly timestamp?: string;
-  readonly uuid?: string;
-  readonly message?: {
-    readonly role?: string;
-    readonly content?: unknown;
-  };
-}
-
-function isRecord(value: unknown): value is TranscriptRecord {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-  return true;
-}
-
-export function extractText(content: unknown): string {
-  if (typeof content === "string") {
-    return content;
-  }
-
-  if (Array.isArray(content)) {
-    const parts = content
-      .map((part) => {
-        if (typeof part === "string") {
-          return part;
-        }
-        if (!part || typeof part !== "object") {
-          return "";
-        }
-        const text = (part as { text?: unknown }).text;
-        return typeof text === "string" ? text : "";
-      })
-      .filter((part) => part.length > 0);
-
-    return parts.join("\n");
-  }
-
-  if (content && typeof content === "object") {
-    const text = (content as { text?: unknown }).text;
-    if (typeof text === "string") {
-      return text;
-    }
-  }
-
-  return "";
-}
-
-export function isDisplayableUserPrompt(rawPrompt: string): boolean {
-  const normalized = rawPrompt.replace(/\s+/g, " ").trim();
-  if (!normalized) {
-    return false;
-  }
-
-  const hiddenPrefixes = [
-    "<local-command-caveat>",
-    "<command-name>",
-    "<command-message>",
-    "<command-args>",
-    "<local-command-stdout>",
-    "<local-command-stderr>",
-    "<local-command-exit-code>",
-    "<usage>",
-    "agentId:"
-  ];
-
-  return !hiddenPrefixes.some((prefix) => normalized.startsWith(prefix));
-}
-
-export function buildTitle(rawPrompt: string, sessionId: string): string {
-  const firstLine = rawPrompt
-    .split(/\r?\n/u)
-    .map((line) => line.trim())
-    .find((line) => line.length > 0);
-
-  const fallback = `Session ${sessionId.slice(0, 8)}`;
-  if (!firstLine) {
-    return fallback;
-  }
-
-  const sanitized = firstLine.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-  if (!sanitized) {
-    return fallback;
-  }
-
-  if (sanitized.length <= 80) {
-    return sanitized;
-  }
-
-  return `${sanitized.slice(0, 77)}...`;
-}
-
-export function isPathWithin(candidatePath: string, rootPath: string): boolean {
-  const normalizedCandidate = normalizeFsPath(candidatePath);
-  const normalizedRoot = normalizeFsPath(rootPath);
-
-  if (normalizedCandidate === normalizedRoot) {
-    return true;
-  }
-
-  return normalizedCandidate.startsWith(`${normalizedRoot}${path.sep}`);
-}
-
-function normalizeFsPath(fsPath: string): string {
-  const resolved = path.resolve(fsPath);
-  return process.platform === "win32" ? resolved.toLowerCase() : resolved;
 }
