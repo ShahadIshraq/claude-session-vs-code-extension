@@ -5,6 +5,10 @@
   "version": "0.0.1",
   "publisher": "shahad",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ShahadIshraq/claude-session-vs-code-extension.git"
+  },
   "engines": {
     "vscode": "^1.90.0"
   },
