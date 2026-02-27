@@ -48,3 +48,8 @@ export interface SessionTitleSourceOptions {
   readonly firstPromptRaw?: string;
   readonly firstUserRaw?: string;
 }
+
+export interface ISessionDiscoveryService {
+  discover(workspaceFolders: readonly import("vscode").WorkspaceFolder[]): Promise<DiscoveryResult>;
+  getUserPrompts(session: import("../models").SessionNode): Promise<SessionPrompt[]>;
+}

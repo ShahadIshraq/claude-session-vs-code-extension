@@ -2,15 +2,15 @@ import * as fs from "fs";
 import { promises as fsp } from "fs";
 import * as os from "os";
 import * as path from "path";
-import * as readline from "readline";
 import * as vscode from "vscode";
 import { SessionNode } from "../models";
-import { extractText, isDisplayableUserPrompt, isRecord } from "./content";
-import { isPathWithin, normalizeFsPath } from "./pathUtils";
-import { buildTitle, chooseSessionTitleRaw, parseRenameCommandArgs, parseRenameStdoutTitle, toNonEmptySingleLine } from "./title";
-import { CachedPromptList, DiscoveryResult, ParsedSession, SessionPrompt, TranscriptCandidate } from "./types";
+import { buildTitle } from "./title";
+import { CachedPromptList, DiscoveryResult, ISessionDiscoveryService, SessionPrompt, TranscriptCandidate } from "./types";
+import { collectTranscriptFiles, exists } from "./scan";
+import { parseTranscriptFile, matchWorkspace } from "./parseSession";
+import { parseAllUserPrompts } from "./parsePrompts";
 
-export class ClaudeSessionDiscoveryService {
+export class ClaudeSessionDiscoveryService implements ISessionDiscoveryService {
   private readonly projectsRoot: string;
   private readonly promptCacheByPath = new Map<string, CachedPromptList>();
 
@@ -28,7 +28,7 @@ export class ClaudeSessionDiscoveryService {
       return { sessionsByWorkspace, globalInfoMessage: "Open a folder to view Claude sessions." };
     }
 
-    const rootExists = await this.exists(this.projectsRoot);
+    const rootExists = await exists(this.projectsRoot);
     if (!rootExists) {
       return {
         sessionsByWorkspace,
@@ -36,11 +36,12 @@ export class ClaudeSessionDiscoveryService {
       };
     }
 
-    const files = await this.collectTranscriptFiles(this.projectsRoot);
+    const log = (msg: string) => this.outputChannel.appendLine(msg);
+    const files = await collectTranscriptFiles(this.projectsRoot, log);
     const candidates: TranscriptCandidate[] = [];
 
     for (const file of files) {
-      const parsed = await this.parseTranscriptFile(file);
+      const parsed = await parseTranscriptFile(file, log);
       if (!parsed) {
         continue;
       }
@@ -66,7 +67,7 @@ export class ClaudeSessionDiscoveryService {
     }
 
     for (const candidate of candidates) {
-      const targetWorkspace = this.matchWorkspace(candidate.parsed.cwd, workspaceFolders);
+      const targetWorkspace = matchWorkspace(candidate.parsed.cwd, workspaceFolders);
       if (!targetWorkspace) {
         continue;
       }
@@ -119,240 +120,13 @@ export class ClaudeSessionDiscoveryService {
       return cached.prompts;
     }
 
-    const prompts = await this.parseAllUserPrompts(session.transcriptPath, session.sessionId);
+    const log = (msg: string) => this.outputChannel.appendLine(msg);
+    const prompts = await parseAllUserPrompts(session.transcriptPath, session.sessionId, log);
     this.promptCacheByPath.set(session.transcriptPath, {
       mtimeMs: stat.mtimeMs,
       prompts
     });
 
     return prompts;
-  }
-
-  private async collectTranscriptFiles(rootDir: string): Promise<string[]> {
-    const collected: string[] = [];
-    const stack = [rootDir];
-
-    while (stack.length > 0) {
-      const currentDir = stack.pop();
-      if (!currentDir) {
-        continue;
-      }
-
-      let entries: fs.Dirent[];
-      try {
-        entries = await fsp.readdir(currentDir, { withFileTypes: true });
-      } catch (error) {
-        this.outputChannel.appendLine(`[discovery] readdir failed for ${currentDir}: ${String(error)}`);
-        continue;
-      }
-
-      for (const entry of entries) {
-        const fullPath = path.join(currentDir, entry.name);
-
-        if (entry.isDirectory()) {
-          if (entry.name === "subagents") {
-            continue;
-          }
-          stack.push(fullPath);
-          continue;
-        }
-
-        if (!entry.isFile()) {
-          continue;
-        }
-
-        if (!entry.name.endsWith(".jsonl")) {
-          continue;
-        }
-
-        if (entry.name.startsWith("agent-")) {
-          continue;
-        }
-
-        collected.push(fullPath);
-      }
-    }
-
-    return collected;
-  }
-
-  private async parseTranscriptFile(transcriptPath: string): Promise<ParsedSession | null> {
-    const stream = fs.createReadStream(transcriptPath, { encoding: "utf8" });
-    const rl = readline.createInterface({ input: stream, crlfDelay: Infinity });
-
-    let sessionId: string | undefined;
-    let cwd: string | undefined;
-    let firstPromptRaw: string | undefined;
-    let firstUserRaw: string | undefined;
-    let latestExplicitTitle: string | undefined;
-
-    try {
-      for await (const line of rl) {
-        if (!line.trim()) {
-          continue;
-        }
-
-        let parsed: unknown;
-        try {
-          parsed = JSON.parse(line);
-        } catch (error) {
-          this.outputChannel.appendLine(`[discovery] malformed JSON in ${transcriptPath}: ${String(error)}`);
-          continue;
-        }
-
-        if (!isRecord(parsed)) {
-          continue;
-        }
-
-        if (!sessionId && typeof parsed.sessionId === "string" && parsed.sessionId.trim() !== "") {
-          sessionId = parsed.sessionId;
-        }
-
-        if (!cwd && typeof parsed.cwd === "string" && parsed.cwd.trim() !== "") {
-          cwd = parsed.cwd;
-        }
-
-        if (parsed.type === "custom-title") {
-          const customTitle = toNonEmptySingleLine(parsed.customTitle);
-          if (customTitle) {
-            latestExplicitTitle = customTitle;
-          }
-        }
-
-        if (parsed.type === "agent-name") {
-          const agentName = toNonEmptySingleLine(parsed.agentName);
-          if (agentName) {
-            latestExplicitTitle = agentName;
-          }
-        }
-
-        if (parsed.type === "user" && parsed.message?.role === "user") {
-          const text = extractText(parsed.message.content);
-          if (text.trim()) {
-            if (!firstUserRaw) {
-              firstUserRaw = text;
-            }
-            if (!firstPromptRaw && isDisplayableUserPrompt(text)) {
-              firstPromptRaw = text;
-            }
-
-            const renameArgsTitle = parseRenameCommandArgs(text);
-            if (renameArgsTitle) {
-              latestExplicitTitle = renameArgsTitle;
-            }
-
-            const renameStdoutTitle = parseRenameStdoutTitle(text);
-            if (renameStdoutTitle) {
-              latestExplicitTitle = renameStdoutTitle;
-            }
-          }
-        }
-      }
-    } finally {
-      rl.close();
-      stream.close();
-    }
-
-    if (!sessionId || !cwd) {
-      return null;
-    }
-
-    return {
-      sessionId,
-      cwd,
-      titleSourceRaw: chooseSessionTitleRaw({
-        latestExplicitTitle,
-        firstPromptRaw,
-        firstUserRaw
-      }) ?? ""
-    };
-  }
-
-  private async parseAllUserPrompts(transcriptPath: string, fallbackSessionId: string): Promise<SessionPrompt[]> {
-    const stream = fs.createReadStream(transcriptPath, { encoding: "utf8" });
-    const rl = readline.createInterface({ input: stream, crlfDelay: Infinity });
-
-    const prompts: SessionPrompt[] = [];
-    let promptIndex = 0;
-
-    try {
-      for await (const line of rl) {
-        if (!line.trim()) {
-          continue;
-        }
-
-        let parsed: unknown;
-        try {
-          parsed = JSON.parse(line);
-        } catch (error) {
-          this.outputChannel.appendLine(`[discovery] malformed JSON in ${transcriptPath}: ${String(error)}`);
-          continue;
-        }
-
-        if (!isRecord(parsed)) {
-          continue;
-        }
-
-        if (!(parsed.type === "user" && parsed.message?.role === "user")) {
-          continue;
-        }
-
-        const promptRaw = extractText(parsed.message.content);
-        if (!promptRaw.trim()) {
-          continue;
-        }
-
-        if (!isDisplayableUserPrompt(promptRaw)) {
-          continue;
-        }
-
-        const timestampIso = typeof parsed.timestamp === "string" ? parsed.timestamp : undefined;
-        const parsedTimestamp = timestampIso ? Date.parse(timestampIso) : Number.NaN;
-        const timestampMs = Number.isFinite(parsedTimestamp) ? parsedTimestamp : undefined;
-        const sessionId =
-          typeof parsed.sessionId === "string" && parsed.sessionId.trim() !== ""
-            ? parsed.sessionId
-            : fallbackSessionId;
-
-        prompts.push({
-          promptId:
-            typeof parsed.uuid === "string" && parsed.uuid.trim() !== ""
-              ? parsed.uuid
-              : `${fallbackSessionId}:${promptIndex}`,
-          sessionId,
-          promptRaw,
-          promptTitle: buildTitle(promptRaw, fallbackSessionId),
-          timestampIso,
-          timestampMs
-        });
-        promptIndex += 1;
-      }
-    } finally {
-      rl.close();
-      stream.close();
-    }
-
-    return prompts;
-  }
-
-  private matchWorkspace(
-    sessionCwd: string,
-    workspaceFolders: readonly vscode.WorkspaceFolder[]
-  ): vscode.WorkspaceFolder | undefined {
-    const normalizedCwd = normalizeFsPath(sessionCwd);
-    const matching = workspaceFolders
-      .filter((folder) => isPathWithin(normalizedCwd, normalizeFsPath(folder.uri.fsPath)))
-      .sort((a, b) => b.uri.fsPath.length - a.uri.fsPath.length);
-
-    return matching[0];
-  }
-
-  private async exists(targetPath: string): Promise<boolean> {
-    try {
-      await fsp.access(targetPath, fs.constants.R_OK);
-      return true;
-    } catch {
-      return false;
-    }
   }
 }

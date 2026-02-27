@@ -9,6 +9,10 @@ export interface OpenSessionOptions {
   readonly dangerouslySkipPermissions?: boolean;
 }
 
+export interface ISessionLauncher {
+  openSession(session: SessionNode, options?: OpenSessionOptions): Promise<void>;
+}
+
 export class ClaudeTerminalService {
   public constructor(private readonly outputChannel: vscode.OutputChannel) {}
 

@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { ClaudeSessionDiscoveryService } from "./discovery";
+import { ISessionDiscoveryService } from "./discovery";
 import { ClaudeTreeNode, InfoNode, SessionNode, SessionPromptNode, WorkspaceNode } from "./models";
 
 export class ClaudeSessionsTreeDataProvider implements vscode.TreeDataProvider<ClaudeTreeNode> {
@@ -10,7 +10,7 @@ export class ClaudeSessionsTreeDataProvider implements vscode.TreeDataProvider<C
 
   public readonly onDidChangeTreeData = this.onDidChangeTreeDataEmitter.event;
 
-  public constructor(private readonly discoveryService: ClaudeSessionDiscoveryService) {}
+  public constructor(private readonly discoveryService: ISessionDiscoveryService) {}
 
   public async refresh(): Promise<void> {
     const workspaceFolders = vscode.workspace.workspaceFolders ?? [];

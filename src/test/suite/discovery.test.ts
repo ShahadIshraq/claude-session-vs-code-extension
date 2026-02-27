@@ -1,11 +1,16 @@
 import * as assert from "assert";
+import { promises as fsp } from "fs";
+import * as os from "os";
 import * as path from "path";
+import * as vscode from "vscode";
 import {
   buildTitle,
   chooseSessionTitleRaw,
   extractText,
   isDisplayableUserPrompt,
   isPathWithin,
+  matchWorkspace,
+  parseAllUserPrompts,
   parseRenameCommandArgs,
   parseRenameStdoutTitle
 } from "../../discovery";
@@ -83,5 +88,135 @@ describe("discovery helpers", () => {
       firstUserRaw: "Implement the following plan"
     });
     assert.strictEqual(chosen, "Implement the following plan");
+  });
+});
+
+describe("matchWorkspace", () => {
+  function makeFolder(fsPath: string): vscode.WorkspaceFolder {
+    return {
+      uri: vscode.Uri.file(fsPath),
+      name: path.basename(fsPath),
+      index: 0
+    };
+  }
+
+  it("returns the folder that contains the session cwd", () => {
+    const folders = [makeFolder("/workspace/project-a"), makeFolder("/workspace/project-b")];
+    const result = matchWorkspace("/workspace/project-a/subdir", folders);
+    assert.strictEqual(result?.uri.fsPath, folders[0].uri.fsPath);
+  });
+
+  it("returns undefined when no folder matches", () => {
+    const folders = [makeFolder("/workspace/project-a")];
+    const result = matchWorkspace("/other/path", folders);
+    assert.strictEqual(result, undefined);
+  });
+
+  it("prefers the deepest matching folder", () => {
+    const parent = makeFolder("/workspace");
+    const child = makeFolder("/workspace/nested");
+    const folders = [parent, child];
+    const result = matchWorkspace("/workspace/nested/sub", folders);
+    assert.strictEqual(result?.uri.fsPath, child.uri.fsPath);
+  });
+
+  it("matches when cwd equals the folder path exactly", () => {
+    const folder = makeFolder("/workspace/project");
+    const result = matchWorkspace("/workspace/project", [folder]);
+    assert.strictEqual(result?.uri.fsPath, folder.uri.fsPath);
+  });
+});
+
+describe("parseAllUserPrompts", () => {
+  let tmpDir: string;
+
+  before(async () => {
+    tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), "claude-test-"));
+  });
+
+  after(async () => {
+    await fsp.rm(tmpDir, { recursive: true, force: true });
+  });
+
+  it("extracts user prompts from JSONL transcript", async () => {
+    const lines = [
+      JSON.stringify({ type: "system", sessionId: "sess-1", cwd: "/tmp" }),
+      JSON.stringify({
+        type: "user",
+        sessionId: "sess-1",
+        uuid: "uuid-1",
+        timestamp: "2025-01-01T00:00:00Z",
+        message: { role: "user", content: "Hello Claude" }
+      }),
+      JSON.stringify({
+        type: "assistant",
+        message: { role: "assistant", content: "Hi there" }
+      }),
+      JSON.stringify({
+        type: "user",
+        sessionId: "sess-1",
+        uuid: "uuid-2",
+        timestamp: "2025-01-01T00:01:00Z",
+        message: { role: "user", content: "Fix the bug" }
+      })
+    ];
+
+    const filePath = path.join(tmpDir, "test-prompts.jsonl");
+    await fsp.writeFile(filePath, lines.join("\n"), "utf8");
+
+    const log = () => {};
+    const prompts = await parseAllUserPrompts(filePath, "sess-1", log);
+
+    assert.strictEqual(prompts.length, 2);
+    assert.strictEqual(prompts[0].promptId, "uuid-1");
+    assert.strictEqual(prompts[0].promptRaw, "Hello Claude");
+    assert.strictEqual(prompts[0].timestampMs, Date.parse("2025-01-01T00:00:00Z"));
+    assert.strictEqual(prompts[1].promptId, "uuid-2");
+    assert.strictEqual(prompts[1].promptRaw, "Fix the bug");
+  });
+
+  it("filters non-displayable prompts", async () => {
+    const lines = [
+      JSON.stringify({
+        type: "user",
+        sessionId: "sess-2",
+        uuid: "uuid-a",
+        message: { role: "user", content: "<command-name>/model</command-name>" }
+      }),
+      JSON.stringify({
+        type: "user",
+        sessionId: "sess-2",
+        uuid: "uuid-b",
+        message: { role: "user", content: "Implement the feature" }
+      })
+    ];
+
+    const filePath = path.join(tmpDir, "test-filter.jsonl");
+    await fsp.writeFile(filePath, lines.join("\n"), "utf8");
+
+    const log = () => {};
+    const prompts = await parseAllUserPrompts(filePath, "sess-2", log);
+
+    assert.strictEqual(prompts.length, 1);
+    assert.strictEqual(prompts[0].promptRaw, "Implement the feature");
+  });
+
+  it("uses fallback session ID when line has none", async () => {
+    const lines = [
+      JSON.stringify({
+        type: "user",
+        message: { role: "user", content: "A prompt without session ID" }
+      })
+    ];
+
+    const filePath = path.join(tmpDir, "test-fallback.jsonl");
+    await fsp.writeFile(filePath, lines.join("\n"), "utf8");
+
+    const log = () => {};
+    const prompts = await parseAllUserPrompts(filePath, "fallback-id", log);
+
+    assert.strictEqual(prompts.length, 1);
+    assert.strictEqual(prompts[0].sessionId, "fallback-id");
+    assert.strictEqual(prompts[0].promptId, "fallback-id:0");
   });
 });

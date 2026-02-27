@@ -12,7 +12,6 @@
     "Other"
   ],
   "activationEvents": [
-    "onStartupFinished",
     "onView:claudeSessionsExplorer",
     "onView:claudeSessionsSidebarView",
     "onCommand:claudeSessions.refresh",
