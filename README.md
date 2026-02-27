@@ -18,6 +18,32 @@ A VS Code extension that lets you browse Claude Code sessions for your current w
 - `Refresh Claude Sessions` command.
 - `Focus Claude Sessions View` command.
 
+## Usage
+
+### Session list with prompt history
+
+Browse all Claude Code sessions for your workspace, each expandable to show individual prompts.
+
+![Session list with prompt history](media/project-session-list.jpg)
+
+### Resume or open a session
+
+Hover a session to reveal actions: resume in a terminal (green icon) or resume with `--dangerously-skip-permissions` (red icon).
+
+![Open Claude Session](media/open-session.jpg)
+
+### Session details with inline actions
+
+Expand a session to see prompts and timestamps. Click the green or red terminal icons to resume.
+
+![Session detail view](media/project-session-view.jpg)
+
+### Prompt preview
+
+Click a prompt entry to open its full content in a read-only editor tab.
+
+![Prompt preview](media/prompt-wide-view.jpg)
+
 ## Requirements
 
 - VS Code desktop.
@@ -52,7 +78,16 @@ npm run watch
 - Open the `Claude Sessions` icon in the Activity Bar, or
 - Run `Focus Claude Sessions View` from Command Palette.
 
-## Build + Install In VS Code
+## Install
+
+Download the latest `.vsix` from [GitHub Releases](https://github.com/ShahadIshraq/claude-session-vs-code-extension/releases), then install it in VS Code:
+
+1. Open Command Palette (`Cmd+Shift+P`).
+2. Run `Extensions: Install from VSIX...`.
+3. Select the downloaded `.vsix` file.
+4. Reload when prompted.
+
+## Build + Install From Source
 
 ### Package as VSIX
 
