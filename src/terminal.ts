@@ -2,6 +2,7 @@ import { execFile } from "child_process";
 import { promisify } from "util";
 import * as vscode from "vscode";
 import { SessionNode } from "./models";
+import { truncateForTreeLabel } from "./treeProvider";
 
 const execFileAsync = promisify(execFile);
 
@@ -25,7 +26,7 @@ export class ClaudeTerminalService {
     }
 
     const terminal = vscode.window.createTerminal({
-      name: session.title,
+      name: truncateForTreeLabel(session.title, 35),
       cwd: session.cwd,
       location: {
         viewColumn: vscode.ViewColumn.Active

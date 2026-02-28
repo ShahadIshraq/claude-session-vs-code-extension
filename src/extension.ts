@@ -10,15 +10,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const discovery = new ClaudeSessionDiscoveryService(outputChannel);
   const terminalService = new ClaudeTerminalService(outputChannel);
   const treeProvider = new ClaudeSessionsTreeDataProvider(discovery);
-  const promptPreviewProvider = new PromptPreviewDocumentProvider();
   outputChannel.appendLine("[lifecycle] Claude Sessions extension activated.");
   outputChannel.appendLine(`[lifecycle] workspaceFolders=${String(vscode.workspace.workspaceFolders?.length ?? 0)}`);
 
   context.subscriptions.push(outputChannel);
-  context.subscriptions.push(promptPreviewProvider);
-  context.subscriptions.push(
-    vscode.workspace.registerTextDocumentContentProvider("claude-sessions-prompt", promptPreviewProvider)
-  );
   let hasRefreshed = false;
   const lazyRefresh = async () => {
     if (!hasRefreshed) {
@@ -104,6 +99,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     })
   );
 
+  const promptPanels = new Map<string, vscode.WebviewPanel>();
+
   context.subscriptions.push(
     vscode.commands.registerCommand("claudeSessions.openPromptPreview", async (node: SessionPromptNode) => {
       if (!node || node.kind !== "sessionPrompt") {
@@ -111,14 +108,24 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         return;
       }
 
-      const content = buildPromptPreviewDocument(node);
-      const truncatedTitle = truncateForTreeLabel(node.promptTitle, 35);
-      const uri = promptPreviewProvider.setContent(`${truncatedTitle}-${node.promptId}`, content);
-      const doc = await vscode.workspace.openTextDocument(uri);
-      await vscode.window.showTextDocument(doc, {
-        preview: true,
-        viewColumn: vscode.ViewColumn.Beside
-      });
+      const uniqueId = `${node.sessionId}-${node.promptId}`;
+      const existing = promptPanels.get(uniqueId);
+      if (existing) {
+        existing.reveal(vscode.ViewColumn.Beside);
+        return;
+      }
+
+      const tabTitle = truncateForTreeLabel(node.promptTitle, 35);
+      const panel = vscode.window.createWebviewPanel(
+        "claudeSessionsPromptPreview",
+        tabTitle,
+        { viewColumn: vscode.ViewColumn.Beside, preserveFocus: false },
+        { enableScripts: false }
+      );
+
+      panel.webview.html = buildPromptPreviewHtml(node);
+      promptPanels.set(uniqueId, panel);
+      panel.onDidDispose(() => promptPanels.delete(uniqueId));
     })
   );
 
@@ -159,69 +166,33 @@ async function confirmDangerousLaunch(session: SessionNode): Promise<boolean> {
   return response === acceptLabel;
 }
 
-export function buildPromptPreviewDocument(node: SessionPromptNode): string {
-  const header = [
-    `# ${escapeMarkdown(node.sessionTitle)}`,
-    "",
-    `- Session ID: \`${node.sessionId}\``,
-    `- Prompt #: ${String(node.promptIndex + 1)}`,
-    `- Timestamp: ${node.timestampIso ?? "unavailable"}`,
-    "",
-    "## User Prompt",
-    "",
-    "```text",
-    node.promptRaw,
-    "```"
-  ];
-
-  return header.join("\n");
+export function escapeHtml(text: string): string {
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
-export function escapeMarkdown(value: string): string {
-  return value.replace(/([\\`*_{}[\]()#+\-.!|>])/g, "\\$1");
-}
-
-const MAX_PREVIEW_ENTRIES = 50;
-
-class PromptPreviewDocumentProvider implements vscode.TextDocumentContentProvider, vscode.Disposable {
-  private readonly onDidChangeEmitter = new vscode.EventEmitter<vscode.Uri>();
-  private readonly contentByUri = new Map<string, string>();
-
-  public readonly onDidChange = this.onDidChangeEmitter.event;
-
-  public setContent(key: string, content: string): vscode.Uri {
-    const uri = vscode.Uri.parse(`claude-sessions-prompt:/${encodeURIComponent(key)}.md`);
-    const uriKey = uri.toString();
-
-    // Delete-then-reinsert for LRU ordering
-    this.contentByUri.delete(uriKey);
-    this.contentByUri.set(uriKey, content);
-
-    // Evict oldest entries when over limit
-    while (this.contentByUri.size > MAX_PREVIEW_ENTRIES) {
-      const oldest = this.contentByUri.keys().next().value;
-      if (oldest !== undefined) {
-        this.contentByUri.delete(oldest);
-      }
-    }
-
-    this.onDidChangeEmitter.fire(uri);
-    return uri;
-  }
-
-  public provideTextDocumentContent(uri: vscode.Uri): string {
-    const uriKey = uri.toString();
-    const content = this.contentByUri.get(uriKey);
-    if (content !== undefined) {
-      // Delete-then-reinsert for LRU freshness on read
-      this.contentByUri.delete(uriKey);
-      this.contentByUri.set(uriKey, content);
-    }
-    return content ?? "# Prompt preview is unavailable.";
-  }
-
-  public dispose(): void {
-    this.contentByUri.clear();
-    this.onDidChangeEmitter.dispose();
-  }
+export function buildPromptPreviewHtml(node: SessionPromptNode): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  body { font-family: var(--vscode-font-family, sans-serif); color: var(--vscode-editor-foreground); background: var(--vscode-editor-background); padding: 16px; line-height: 1.5; }
+  h1 { font-size: 1.4em; margin-bottom: 0.5em; }
+  h2 { font-size: 1.1em; margin-top: 1.5em; }
+  ul { padding-left: 1.5em; }
+  code { background: var(--vscode-textCodeBlock-background, rgba(128,128,128,0.15)); padding: 2px 4px; border-radius: 3px; }
+  pre { background: var(--vscode-textCodeBlock-background, rgba(128,128,128,0.15)); padding: 12px; border-radius: 4px; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; }
+</style>
+</head>
+<body>
+  <h1>${escapeHtml(node.sessionTitle)}</h1>
+  <ul>
+    <li>Session ID: <code>${escapeHtml(node.sessionId)}</code></li>
+    <li>Prompt #: ${String(node.promptIndex + 1)}</li>
+    <li>Timestamp: ${escapeHtml(node.timestampIso ?? "unavailable")}</li>
+  </ul>
+  <h2>User Prompt</h2>
+  <pre>${escapeHtml(node.promptRaw)}</pre>
+</body>
+</html>`;
 }
