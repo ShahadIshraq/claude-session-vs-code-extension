@@ -2,7 +2,7 @@
   "name": "vscode-claude-sessions",
   "displayName": "Claude Sessions Explorer",
   "description": "Browse and resume Claude Code sessions from the Explorer sidebar.",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "publisher": "ShahadIshraq",
   "license": "MIT",
   "icon": "media/icon.png",
