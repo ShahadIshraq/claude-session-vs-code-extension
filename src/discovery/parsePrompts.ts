@@ -4,6 +4,8 @@ import { extractText, isDisplayableUserPrompt, isRecord } from "./content";
 import { buildTitle } from "./title";
 import { SessionPrompt } from "./types";
 
+const MAX_RESPONSE_LENGTH = 50_000;
+
 export async function parseAllUserPrompts(
   transcriptPath: string,
   fallbackSessionId: string,
@@ -30,6 +32,22 @@ export async function parseAllUserPrompts(
       }
 
       if (!isRecord(parsed)) {
+        continue;
+      }
+
+      if (parsed.type === "assistant" && parsed.message?.role === "assistant") {
+        const responseText = extractText(parsed.message.content);
+        if (responseText.trim() && prompts.length > 0) {
+          const prev = prompts[prompts.length - 1];
+          const existing = prev.responseRaw ?? "";
+          if (existing.length < MAX_RESPONSE_LENGTH) {
+            const combined = existing ? `${existing}\n${responseText}` : responseText;
+            prompts[prompts.length - 1] = {
+              ...prev,
+              responseRaw: combined.length > MAX_RESPONSE_LENGTH ? combined.slice(0, MAX_RESPONSE_LENGTH) : combined
+            };
+          }
+        }
         continue;
       }
 

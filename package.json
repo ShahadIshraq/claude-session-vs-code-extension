@@ -25,7 +25,6 @@
     "onCommand:claudeSessions.openPromptPreview",
     "onCommand:claudeSessions.focusView",
     "onCommand:claudeSessions.search",
-    "onCommand:claudeSessions.filter",
     "onCommand:claudeSessions.clearFilter"
   ],
   "main": "./out/extension.js",
@@ -65,11 +64,6 @@
         "command": "claudeSessions.search",
         "title": "Search Claude Sessions",
         "icon": "$(search)"
-      },
-      {
-        "command": "claudeSessions.filter",
-        "title": "Filter Claude Sessions",
-        "icon": "$(filter)"
       },
       {
         "command": "claudeSessions.clearFilter",
@@ -119,16 +113,6 @@
         },
         {
           "command": "claudeSessions.search",
-          "when": "view == claudeSessionsSidebarView",
-          "group": "navigation"
-        },
-        {
-          "command": "claudeSessions.filter",
-          "when": "view == claudeSessionsExplorer",
-          "group": "navigation"
-        },
-        {
-          "command": "claudeSessions.filter",
           "when": "view == claudeSessionsSidebarView",
           "group": "navigation"
         },

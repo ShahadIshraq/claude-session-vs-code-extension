@@ -1,7 +1,8 @@
 import * as assert from "assert";
 import * as vscode from "vscode";
 import { ClaudeSessionsTreeDataProvider } from "../../treeProvider";
-import { InfoNode, SessionNode, WorkspaceNode } from "../../models";
+import { findHighlightRanges } from "../../treeProvider";
+import { InfoNode, SessionNode, SessionPromptNode, WorkspaceNode } from "../../models";
 import { DiscoveryResult, ISessionDiscoveryService, SearchableEntry, SessionPrompt } from "../../discovery/types";
 
 // ---------------------------------------------------------------------------
@@ -367,7 +368,121 @@ describe("ClaudeSessionsTreeDataProvider — filter functionality", () => {
   });
 
   // -------------------------------------------------------------------------
-  // Test 10: Multiple setFilter calls replace the previous filter state
+  // Test 10: Matching prompts are highlighted when filter is active
+  // -------------------------------------------------------------------------
+  it("getTreeItem highlights matching text in the label when filter query appears in promptTitle", () => {
+    const discovery = makeMockDiscoveryService();
+    const provider = new ClaudeSessionsTreeDataProvider(discovery);
+
+    provider.setFilter("auth", new Set(["sess-hl"]));
+
+    const promptNode: SessionPromptNode = {
+      kind: "sessionPrompt",
+      sessionId: "sess-hl",
+      sessionTitle: "Highlight Session",
+      promptId: "p-hl-1",
+      promptIndex: 0,
+      promptTitle: "Set up authentication flow",
+      promptRaw: "Help me set up an Authentication flow with JWT tokens",
+      timestampIso: "2025-08-01T10:00:00Z",
+      timestampMs: Date.parse("2025-08-01T10:00:00Z")
+    };
+
+    const item = provider.getTreeItem(promptNode);
+    const labelObj = item.label as vscode.TreeItemLabel;
+
+    assert.ok(typeof item.label === "object" && item.label !== null, "label should be a TreeItemLabel object");
+    assert.strictEqual(labelObj.label, "Set up authentication flow");
+    assert.ok(Array.isArray(labelObj.highlights), "highlights should be an array");
+    assert.ok(labelObj.highlights!.length > 0, "highlights should contain at least one range");
+    // "auth" appears at index 7 in "Set up authentication flow"
+    assert.deepStrictEqual(labelObj.highlights![0], [7, 11], "highlight range should cover 'auth'");
+    assert.ok(item.iconPath instanceof vscode.ThemeIcon, "matching prompt should have a colored icon");
+  });
+
+  // -------------------------------------------------------------------------
+  // Test 11: Non-matching label gets no highlight even if promptRaw matches
+  // -------------------------------------------------------------------------
+  it("getTreeItem does NOT highlight when query matches promptRaw but not the visible label", () => {
+    const discovery = makeMockDiscoveryService();
+    const provider = new ClaudeSessionsTreeDataProvider(discovery);
+
+    provider.setFilter("paging", new Set(["sess-hl"]));
+
+    const promptNode: SessionPromptNode = {
+      kind: "sessionPrompt",
+      sessionId: "sess-hl",
+      sessionTitle: "Highlight Session",
+      promptId: "p-hl-2",
+      promptIndex: 1,
+      promptTitle: "Request interrupted by user for tool use",
+      promptRaw: "Some long text that mentions paging somewhere in the raw content",
+      timestampIso: "2025-08-01T11:00:00Z",
+      timestampMs: Date.parse("2025-08-01T11:00:00Z")
+    };
+
+    const item = provider.getTreeItem(promptNode);
+
+    assert.strictEqual(typeof item.label, "string", "label should be a plain string when no match in label text");
+    assert.strictEqual(item.description, "match in prompt", "description should indicate a raw prompt match");
+    assert.ok(item.iconPath instanceof vscode.ThemeIcon, "raw-match prompt should have a colored icon");
+  });
+
+  // -------------------------------------------------------------------------
+  // Test 11b: Match in assistant response shows "match in response" indicator
+  // -------------------------------------------------------------------------
+  it("getTreeItem shows 'match in response' when query matches responseRaw but not label or promptRaw", () => {
+    const discovery = makeMockDiscoveryService();
+    const provider = new ClaudeSessionsTreeDataProvider(discovery);
+
+    provider.setFilter("paging", new Set(["sess-hl"]));
+
+    const promptNode: SessionPromptNode = {
+      kind: "sessionPrompt",
+      sessionId: "sess-hl",
+      sessionTitle: "Highlight Session",
+      promptId: "p-hl-3",
+      promptIndex: 2,
+      promptTitle: "How do I refresh the app",
+      promptRaw: "How do I refresh the app on my phone?",
+      responseRaw: "You can implement paging by using a FlatList with onEndReached callback",
+      timestampIso: "2025-08-01T12:00:00Z",
+      timestampMs: Date.parse("2025-08-01T12:00:00Z")
+    };
+
+    const item = provider.getTreeItem(promptNode);
+
+    assert.strictEqual(typeof item.label, "string", "label should be a plain string");
+    assert.strictEqual(item.description, "match in response", "description should indicate a response match");
+    assert.ok(item.iconPath instanceof vscode.ThemeIcon, "response-match prompt should have a colored icon");
+  });
+
+  // -------------------------------------------------------------------------
+  // Test 12: Prompts are NOT highlighted when no filter is active
+  // -------------------------------------------------------------------------
+  it("getTreeItem uses a plain string label when no filter is active", () => {
+    const discovery = makeMockDiscoveryService();
+    const provider = new ClaudeSessionsTreeDataProvider(discovery);
+
+    const promptNode: SessionPromptNode = {
+      kind: "sessionPrompt",
+      sessionId: "sess-no-filter",
+      sessionTitle: "No Filter Session",
+      promptId: "p-nf-1",
+      promptIndex: 0,
+      promptTitle: "Set up authentication flow",
+      promptRaw: "Help me set up an authentication flow",
+      timestampIso: "2025-08-01T10:00:00Z",
+      timestampMs: Date.parse("2025-08-01T10:00:00Z")
+    };
+
+    const item = provider.getTreeItem(promptNode);
+
+    assert.strictEqual(typeof item.label, "string", "label should be a plain string when filter is inactive");
+  });
+
+  // -------------------------------------------------------------------------
+  // Test 13: Multiple setFilter calls replace the previous filter state
   // -------------------------------------------------------------------------
   it("calling setFilter multiple times replaces the previous filter each time", async () => {
     const workspaceUri = "/home/user/project-e";
@@ -403,5 +518,36 @@ describe("ClaudeSessionsTreeDataProvider — filter functionality", () => {
     assert.ok(!sessions2.some((s) => s.sessionId === "sess-ea"), "first filter should have been replaced");
 
     assert.strictEqual(provider.getFilterQuery(), "eb ec", "getFilterQuery should reflect the latest filter query");
+  });
+});
+
+describe("findHighlightRanges", () => {
+  it("returns correct ranges for a single match", () => {
+    const ranges = findHighlightRanges("Set up authentication flow", "auth");
+    assert.deepStrictEqual(ranges, [[7, 11]]);
+  });
+
+  it("returns multiple ranges for repeated occurrences", () => {
+    const ranges = findHighlightRanges("foo bar foo baz foo", "foo");
+    assert.deepStrictEqual(ranges, [
+      [0, 3],
+      [8, 11],
+      [16, 19]
+    ]);
+  });
+
+  it("matches case-insensitively", () => {
+    const ranges = findHighlightRanges("Hello World", "hello");
+    assert.deepStrictEqual(ranges, [[0, 5]]);
+  });
+
+  it("returns empty array when query is not found", () => {
+    const ranges = findHighlightRanges("no match here", "xyz");
+    assert.deepStrictEqual(ranges, []);
+  });
+
+  it("returns empty array for empty query", () => {
+    const ranges = findHighlightRanges("some text", "");
+    assert.deepStrictEqual(ranges, []);
   });
 });

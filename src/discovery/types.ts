@@ -9,6 +9,7 @@ export interface SessionPrompt {
   readonly sessionId: string;
   readonly promptRaw: string;
   readonly promptTitle: string;
+  readonly responseRaw?: string;
   readonly timestampIso?: string;
   readonly timestampMs?: number;
 }
