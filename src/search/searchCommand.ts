@@ -6,7 +6,7 @@ export function registerSearchCommands(
   context: vscode.ExtensionContext,
   discovery: ISessionDiscoveryService,
   treeProvider: ClaudeSessionsTreeDataProvider,
-  _outputChannel: vscode.OutputChannel,
+  outputChannel: vscode.OutputChannel,
   treeViews: { explorer: vscode.TreeView<any>; sidebar: vscode.TreeView<any> }
 ): void {
   context.subscriptions.push(
@@ -31,6 +31,7 @@ export function registerSearchCommands(
 
       treeViews.explorer.message = `Searching for "${query}"...`;
       treeViews.sidebar.message = `Searching for "${query}"...`;
+      outputChannel.appendLine(`[search] Starting search for query: "${query}"`);
 
       let matchCount = 0;
       await vscode.window.withProgress(
@@ -51,6 +52,7 @@ export function registerSearchCommands(
           }
 
           matchCount = matchingIds.size;
+          outputChannel.appendLine(`[search] Found ${String(matchCount)} matching sessions for query: "${query}"`);
           treeProvider.setFilter(query, matchingIds);
         }
       );
