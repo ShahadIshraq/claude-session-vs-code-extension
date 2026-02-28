@@ -1,6 +1,8 @@
 import * as vscode from "vscode";
 import { ClaudeSessionDiscoveryService } from "./discovery";
 import { SessionNode, SessionPromptNode } from "./models";
+import { registerFilterCommands } from "./search/filterCommand";
+import { registerSearchCommand } from "./search/searchCommand";
 import { ClaudeTerminalService } from "./terminal";
 import { ClaudeSessionsTreeDataProvider } from "./treeProvider";
 
@@ -34,6 +36,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   });
   context.subscriptions.push(explorerTreeView);
   context.subscriptions.push(sidebarTreeView);
+
+  registerSearchCommand(context, discovery, outputChannel);
+  registerFilterCommands(context, discovery, treeProvider, outputChannel, {
+    explorer: explorerTreeView,
+    sidebar: sidebarTreeView
+  });
+
   context.subscriptions.push(
     explorerTreeView.onDidChangeVisibility((e) => {
       if (e.visible) {
