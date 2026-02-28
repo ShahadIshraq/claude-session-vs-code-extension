@@ -15,6 +15,8 @@ A VS Code extension that lets you browse Claude Code sessions for your current w
 - `Open Session (Skip Permissions)` action (red terminal icon) to run:
   - `claude --dangerously-skip-permissions --resume <sessionId>`
   - protected by a confirmation modal by default
+- `Search Sessions` command: filter sessions by keyword across all prompt content.
+- `Clear Filter` command: reset the search filter and show all sessions.
 - `Refresh Claude Sessions` command.
 - `Focus Claude Sessions View` command.
 
@@ -37,6 +39,12 @@ Hover a session to reveal actions: resume in a terminal (green icon) or resume w
 Expand a session to see prompts and timestamps. Click the green or red terminal icons to resume.
 
 ![Session detail view](media/project-session-view.jpg)
+
+### Search sessions
+
+Use the search icon in the view title bar to filter sessions by keyword. Matching sessions are shown in the tree with a `Filter: "<query>"` banner. Clear the filter to restore the full list.
+
+![Search sessions](media/search-view.jpg)
 
 ### Prompt preview
 
