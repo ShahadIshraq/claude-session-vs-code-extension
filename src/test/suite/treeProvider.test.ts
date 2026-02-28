@@ -17,6 +17,7 @@ function makeMockDiscoveryService(overrides: Partial<ISessionDiscoveryService> =
   return {
     discover: (): Promise<DiscoveryResult> => Promise.resolve({ sessionsByWorkspace: new Map() }),
     getUserPrompts: (): Promise<SessionPrompt[]> => Promise.resolve([]),
+    getSearchableEntries: (): Promise<import("../../discovery/types").SearchableEntry[]> => Promise.resolve([]),
     ...overrides
   };
 }
@@ -92,19 +93,20 @@ describe("ClaudeSessionsTreeDataProvider.getTreeItem", () => {
     assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "folder");
   });
 
-  it("SessionNode: label contains truncated title and age token, Collapsed, claudeSession context, click command", () => {
-    // Title is exactly 18 chars: "Fix the login bug!" → will be truncated in label
+  it("SessionNode: label is truncated at 35 chars, description is age token, Collapsed, claudeSession context, click command", () => {
     const longTitle = "A very long session title that exceeds the limit";
     const node = makeSessionNode({ title: longTitle });
     const item = provider.getTreeItem(node);
 
     assert.ok(typeof item.label === "string", "label should be a string");
     const label = item.label as string;
-    // Label is " <truncated-title> · <age-token>"
-    assert.ok(label.includes("\u00b7"), "label should contain the middle-dot separator");
-    // The title portion is truncated to 18 chars
-    const truncated = truncateForTreeLabel(longTitle, 18);
-    assert.ok(label.includes(truncated), `label should contain truncated title: ${truncated}`);
+    // Label is truncated to 35 chars, no middle-dot
+    const truncated = truncateForTreeLabel(longTitle, 35);
+    assert.strictEqual(label, truncated);
+    assert.ok(!label.includes("\u00b7"), "label should not contain the middle-dot separator");
+    // Age token is in description
+    assert.ok(typeof item.description === "string", "description should be a string");
+    assert.strictEqual(item.description, formatAgeToken(node.updatedAt));
 
     assert.strictEqual(item.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed);
     assert.strictEqual(item.contextValue, "claudeSession");

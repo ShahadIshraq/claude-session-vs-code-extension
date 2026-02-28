@@ -7,16 +7,30 @@ export class ClaudeSessionsTreeDataProvider implements vscode.TreeDataProvider<C
 
   private sessionsByWorkspace = new Map<string, SessionNode[]>();
   private globalInfoMessage: string | undefined;
+  private filterQuery: string | undefined;
+  private filteredSessionIds: Set<string> | undefined;
+  private hasLoaded = false;
 
   public readonly onDidChangeTreeData = this.onDidChangeTreeDataEmitter.event;
 
   public constructor(private readonly discoveryService: ISessionDiscoveryService) {}
+
+  public setFilter(query: string | undefined, matchingSessionIds: Set<string> | undefined): void {
+    this.filterQuery = query;
+    this.filteredSessionIds = matchingSessionIds;
+    this.onDidChangeTreeDataEmitter.fire(undefined);
+  }
+
+  public getFilterQuery(): string | undefined {
+    return this.filterQuery;
+  }
 
   public async refresh(): Promise<void> {
     const workspaceFolders = vscode.workspace.workspaceFolders ?? [];
     const result = await this.discoveryService.discover(workspaceFolders);
     this.sessionsByWorkspace = result.sessionsByWorkspace;
     this.globalInfoMessage = result.globalInfoMessage;
+    this.hasLoaded = true;
     this.onDidChangeTreeDataEmitter.fire(undefined);
   }
 
@@ -33,11 +47,9 @@ export class ClaudeSessionsTreeDataProvider implements vscode.TreeDataProvider<C
       const lastUsedLabel = formatRelativeTime(element.updatedAt);
       const lastUsedCompact = formatAgeToken(element.updatedAt);
       const lastUsedAbsolute = new Date(element.updatedAt).toLocaleString();
-      const listLabel = truncateForTreeLabel(element.title, 18);
-      const item = new vscode.TreeItem(
-        ` ${listLabel} \u00b7 ${lastUsedCompact}`,
-        vscode.TreeItemCollapsibleState.Collapsed
-      );
+      const listLabel = truncateForTreeLabel(element.title, 35);
+      const item = new vscode.TreeItem(listLabel, vscode.TreeItemCollapsibleState.Collapsed);
+      item.description = lastUsedCompact;
       item.contextValue = "claudeSession";
       item.tooltip = [
         `Session: ${element.sessionId}`,
@@ -56,7 +68,15 @@ export class ClaudeSessionsTreeDataProvider implements vscode.TreeDataProvider<C
 
     if (element.kind === "sessionPrompt") {
       const label = truncateForTreeLabel(element.promptTitle, 64);
-      const item = new vscode.TreeItem(label, vscode.TreeItemCollapsibleState.None);
+      const labelHighlights = this.filterQuery ? findHighlightRanges(label, this.filterQuery) : [];
+      const lowerQuery = this.filterQuery?.toLowerCase();
+      const rawMatches = lowerQuery ? element.promptRaw.toLowerCase().includes(lowerQuery) : false;
+      const responseMatches =
+        lowerQuery && element.responseRaw ? element.responseRaw.toLowerCase().includes(lowerQuery) : false;
+      const item = new vscode.TreeItem(
+        labelHighlights.length > 0 ? { label, highlights: labelHighlights } : label,
+        vscode.TreeItemCollapsibleState.None
+      );
       item.contextValue = "claudeSessionPrompt";
       item.tooltip = [
         `Session: ${element.sessionTitle}`,
@@ -70,6 +90,14 @@ export class ClaudeSessionsTreeDataProvider implements vscode.TreeDataProvider<C
         title: "Open Prompt Preview",
         arguments: [element]
       };
+      if (labelHighlights.length > 0 || rawMatches || responseMatches) {
+        item.iconPath = new vscode.ThemeIcon("circle-filled", new vscode.ThemeColor("list.highlightForeground"));
+      }
+      if (labelHighlights.length === 0 && rawMatches) {
+        item.description = "match in prompt";
+      } else if (labelHighlights.length === 0 && responseMatches) {
+        item.description = "match in response";
+      }
       return item;
     }
 
@@ -107,8 +135,21 @@ export class ClaudeSessionsTreeDataProvider implements vscode.TreeDataProvider<C
     }
 
     const sessions = this.sessionsByWorkspace.get(element.folder.uri.toString()) ?? [];
+
+    if (this.filteredSessionIds !== undefined) {
+      const filtered = sessions.filter((s) => this.filteredSessionIds!.has(s.sessionId));
+      if (filtered.length === 0) {
+        return [this.createInfoNode("No matches in this folder.", element.folder.uri.toString())];
+      }
+      return filtered;
+    }
+
     if (sessions.length > 0) {
       return sessions;
+    }
+
+    if (!this.hasLoaded) {
+      return [this.createInfoNode("Loading sessions...", element.folder.uri.toString())];
     }
 
     if (this.globalInfoMessage) {
@@ -145,6 +186,7 @@ export class ClaudeSessionsTreeDataProvider implements vscode.TreeDataProvider<C
       promptIndex: index,
       promptTitle: prompt.promptTitle,
       promptRaw: prompt.promptRaw,
+      responseRaw: prompt.responseRaw,
       timestampIso: prompt.timestampIso,
       timestampMs: prompt.timestampMs
     }));
@@ -233,4 +275,23 @@ export function truncateForTreeLabel(value: string, maxLength: number): string {
     return normalized;
   }
   return `${normalized.slice(0, Math.max(0, maxLength - 3))}...`;
+}
+
+export function findHighlightRanges(label: string, query: string): [number, number][] {
+  if (query.length === 0) {
+    return [];
+  }
+  const ranges: [number, number][] = [];
+  const lowerLabel = label.toLowerCase();
+  const lowerQuery = query.toLowerCase();
+  let startIndex = 0;
+  while (startIndex < lowerLabel.length) {
+    const idx = lowerLabel.indexOf(lowerQuery, startIndex);
+    if (idx === -1) {
+      break;
+    }
+    ranges.push([idx, idx + lowerQuery.length]);
+    startIndex = idx + lowerQuery.length;
+  }
+  return ranges;
 }

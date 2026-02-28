@@ -6,13 +6,16 @@ import * as vscode from "vscode";
 import { SessionNode } from "../models";
 import { buildTitle } from "./title";
 import {
+  CachedContentText,
   CachedPromptList,
   CachedSessionMeta,
   DiscoveryResult,
   ISessionDiscoveryService,
+  SearchableEntry,
   SessionPrompt,
   TranscriptCandidate
 } from "./types";
+import { parseSessionContent } from "../search/parseContent";
 import { collectTranscriptFiles, exists } from "./scan";
 import { parseTranscriptFile, matchWorkspacePrecomputed, precomputeWorkspacePaths } from "./parseSession";
 import { parseAllUserPrompts } from "./parsePrompts";
@@ -23,6 +26,7 @@ export class ClaudeSessionDiscoveryService implements ISessionDiscoveryService {
   private readonly projectsRoot: string;
   private readonly promptCacheByPath = new Map<string, CachedPromptList>();
   private readonly sessionCacheByPath = new Map<string, CachedSessionMeta>();
+  private readonly contentCacheByPath = new Map<string, CachedContentText>();
 
   public constructor(
     private readonly outputChannel: vscode.OutputChannel,
@@ -58,6 +62,20 @@ export class ClaudeSessionDiscoveryService implements ISessionDiscoveryService {
     for (const cachedPath of this.sessionCacheByPath.keys()) {
       if (!fileSet.has(cachedPath)) {
         this.sessionCacheByPath.delete(cachedPath);
+      }
+    }
+
+    // Also prune content cache
+    for (const cachedPath of this.contentCacheByPath.keys()) {
+      if (!fileSet.has(cachedPath)) {
+        this.contentCacheByPath.delete(cachedPath);
+      }
+    }
+
+    // Also prune prompt cache
+    for (const cachedPath of this.promptCacheByPath.keys()) {
+      if (!fileSet.has(cachedPath)) {
+        this.promptCacheByPath.delete(cachedPath);
       }
     }
 
@@ -180,5 +198,66 @@ export class ClaudeSessionDiscoveryService implements ISessionDiscoveryService {
     });
 
     return prompts;
+  }
+
+  public async getSearchableEntries(workspaceFolders: readonly vscode.WorkspaceFolder[]): Promise<SearchableEntry[]> {
+    const log = (msg: string) => this.outputChannel.appendLine(msg);
+    const result = await this.discover(workspaceFolders);
+
+    const allSessions: SessionNode[] = [];
+    for (const sessions of result.sessionsByWorkspace.values()) {
+      for (const session of sessions) {
+        allSessions.push(session);
+      }
+    }
+
+    const entries: SearchableEntry[] = [];
+
+    for (let i = 0; i < allSessions.length; i += BATCH_CONCURRENCY) {
+      const batch = allSessions.slice(i, i + BATCH_CONCURRENCY);
+      const results = await Promise.allSettled(
+        batch.map(async (session) => {
+          let stat: fs.Stats;
+          try {
+            stat = await fsp.stat(session.transcriptPath);
+          } catch (error) {
+            log(`[search] stat failed for ${session.transcriptPath}: ${String(error)}`);
+            return null;
+          }
+
+          const cached = this.contentCacheByPath.get(session.transcriptPath);
+          let contentText: string;
+          if (cached && cached.mtimeMs === stat.mtimeMs) {
+            contentText = cached.contentText;
+          } else {
+            contentText = await parseSessionContent(session.transcriptPath, log);
+            this.contentCacheByPath.set(session.transcriptPath, {
+              mtimeMs: stat.mtimeMs,
+              contentText
+            });
+          }
+
+          const entry: SearchableEntry = {
+            sessionId: session.sessionId,
+            transcriptPath: session.transcriptPath,
+            title: session.title,
+            cwd: session.cwd,
+            updatedAt: session.updatedAt,
+            contentText
+          };
+          return entry;
+        })
+      );
+
+      for (const res of results) {
+        if (res.status === "fulfilled" && res.value) {
+          entries.push(res.value);
+        } else if (res.status === "rejected") {
+          log(`[search] unexpected batch error: ${String(res.reason)}`);
+        }
+      }
+    }
+
+    return entries;
   }
 }

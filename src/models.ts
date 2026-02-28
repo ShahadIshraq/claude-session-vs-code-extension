@@ -29,6 +29,7 @@ export interface SessionPromptNode {
   readonly promptIndex: number;
   readonly promptTitle: string;
   readonly promptRaw: string;
+  readonly responseRaw?: string;
   readonly timestampIso?: string;
   readonly timestampMs?: number;
 }

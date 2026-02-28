@@ -1,115 +1,81 @@
 import * as assert from "assert";
 import * as vscode from "vscode";
-import { buildPromptPreviewDocument, escapeMarkdown } from "../../extension";
+import { buildPromptPreviewHtml, escapeHtml } from "../../extension";
 import { SessionPromptNode } from "../../models";
 
-describe("escapeMarkdown", () => {
-  it("escapes backslash", () => {
-    assert.strictEqual(escapeMarkdown("a\\b"), "a\\\\b");
+describe("escapeHtml", () => {
+  it("escapes ampersand", () => {
+    assert.strictEqual(escapeHtml("a&b"), "a&amp;b");
   });
 
-  it("escapes backtick", () => {
-    assert.strictEqual(escapeMarkdown("a`b"), "a\\`b");
+  it("escapes less-than", () => {
+    assert.strictEqual(escapeHtml("a<b"), "a&lt;b");
   });
 
-  it("escapes asterisk", () => {
-    assert.strictEqual(escapeMarkdown("a*b"), "a\\*b");
+  it("escapes greater-than", () => {
+    assert.strictEqual(escapeHtml("a>b"), "a&gt;b");
   });
 
-  it("escapes underscore", () => {
-    assert.strictEqual(escapeMarkdown("a_b"), "a\\_b");
-  });
-
-  it("escapes curly braces", () => {
-    assert.strictEqual(escapeMarkdown("a{b}c"), "a\\{b\\}c");
-  });
-
-  it("escapes square brackets", () => {
-    assert.strictEqual(escapeMarkdown("a[b]c"), "a\\[b\\]c");
-  });
-
-  it("escapes parentheses", () => {
-    assert.strictEqual(escapeMarkdown("a(b)c"), "a\\(b\\)c");
-  });
-
-  it("escapes hash, plus, dash, dot, bang, pipe, and angle bracket", () => {
-    assert.strictEqual(escapeMarkdown("#"), "\\#");
-    assert.strictEqual(escapeMarkdown("+"), "\\+");
-    assert.strictEqual(escapeMarkdown("-"), "\\-");
-    assert.strictEqual(escapeMarkdown("."), "\\.");
-    assert.strictEqual(escapeMarkdown("!"), "\\!");
-    assert.strictEqual(escapeMarkdown("|"), "\\|");
-    assert.strictEqual(escapeMarkdown(">"), "\\>");
+  it("escapes double quotes", () => {
+    assert.strictEqual(escapeHtml('a"b'), "a&quot;b");
   });
 
   it("returns plain text unchanged", () => {
-    assert.strictEqual(escapeMarkdown("hello world"), "hello world");
+    assert.strictEqual(escapeHtml("hello world"), "hello world");
   });
 
   it("handles empty string", () => {
-    assert.strictEqual(escapeMarkdown(""), "");
+    assert.strictEqual(escapeHtml(""), "");
+  });
+
+  it("handles multiple special characters", () => {
+    assert.strictEqual(escapeHtml('<div class="x">&</div>'), "&lt;div class=&quot;x&quot;&gt;&amp;&lt;/div&gt;");
   });
 });
 
-describe("buildPromptPreviewDocument", () => {
-  it("produces markdown with session title as H1, metadata list, and prompt in code block", () => {
-    const node: SessionPromptNode = {
-      kind: "sessionPrompt",
-      sessionId: "sess-001",
-      sessionTitle: "My Session",
-      promptId: "p1",
-      promptIndex: 0,
-      promptTitle: "First prompt",
-      promptRaw: "Hello, world!",
-      timestampIso: "2024-01-15T10:30:00.000Z"
-    };
+describe("buildPromptPreviewHtml", () => {
+  const baseNode: SessionPromptNode = {
+    kind: "sessionPrompt",
+    sessionId: "sess-001",
+    sessionTitle: "My Session",
+    promptId: "p1",
+    promptIndex: 0,
+    promptTitle: "First prompt",
+    promptRaw: "Hello, world!",
+    timestampIso: "2024-01-15T10:30:00.000Z"
+  };
 
-    const result = buildPromptPreviewDocument(node);
+  it("produces valid HTML with session title, metadata, and prompt", () => {
+    const result = buildPromptPreviewHtml(baseNode);
 
-    assert.ok(result.startsWith("# My Session\n"), "should start with H1 session title");
-    assert.ok(result.includes("- Session ID: `sess-001`"), "should include session ID");
-    assert.ok(result.includes("- Prompt #: 1"), "should show prompt number starting at 1");
-    assert.ok(result.includes("- Timestamp: 2024-01-15T10:30:00.000Z"), "should include timestamp");
-    assert.ok(result.includes("## User Prompt"), "should include User Prompt heading");
-    assert.ok(result.includes("```text\nHello, world!\n```"), "should include prompt in text code block");
+    assert.ok(result.includes("<!DOCTYPE html>"), "should be a full HTML document");
+    assert.ok(result.includes("<h1>My Session</h1>"), "should include session title as H1");
+    assert.ok(result.includes("sess-001"), "should include session ID");
+    assert.ok(result.includes("Prompt #: 1"), "should show 1-based prompt number");
+    assert.ok(result.includes("2024-01-15T10:30:00.000Z"), "should include timestamp");
+    assert.ok(result.includes("Hello, world!"), "should include prompt text in <pre> block");
   });
 
-  it("handles missing timestampIso and shows unavailable", () => {
-    const node: SessionPromptNode = {
-      kind: "sessionPrompt",
-      sessionId: "sess-002",
-      sessionTitle: "No Timestamp Session",
-      promptId: "p2",
-      promptIndex: 2,
-      promptTitle: "Third prompt",
-      promptRaw: "What is 2+2?",
-      timestampIso: undefined
-    };
+  it("shows 'unavailable' when timestampIso is missing", () => {
+    const node: SessionPromptNode = { ...baseNode, timestampIso: undefined, promptIndex: 2 };
+    const result = buildPromptPreviewHtml(node);
 
-    const result = buildPromptPreviewDocument(node);
-
-    assert.ok(result.includes("- Timestamp: unavailable"), "should show unavailable when timestampIso is missing");
-    assert.ok(result.includes("- Prompt #: 3"), "should show correct 1-based prompt index");
+    assert.ok(result.includes("unavailable"), "should show unavailable when timestampIso is missing");
+    assert.ok(result.includes("Prompt #: 3"), "should show correct 1-based prompt index");
   });
 
-  it("escapes markdown special characters in session title", () => {
+  it("escapes HTML special characters in session title and prompt", () => {
     const node: SessionPromptNode = {
-      kind: "sessionPrompt",
-      sessionId: "sess-003",
-      sessionTitle: "Session [with] *special* chars",
-      promptId: "p3",
-      promptIndex: 0,
-      promptTitle: "Prompt",
-      promptRaw: "test",
-      timestampIso: "2024-01-15T10:30:00.000Z"
+      ...baseNode,
+      sessionTitle: 'Session <script>alert("xss")</script>',
+      promptRaw: "User input with <tags> & special chars"
     };
+    const result = buildPromptPreviewHtml(node);
 
-    const result = buildPromptPreviewDocument(node);
-
-    assert.ok(
-      result.startsWith("# Session \\[with\\] \\*special\\* chars\n"),
-      "should escape markdown in session title"
-    );
+    assert.ok(!result.includes("<script>"), "should not contain raw script tags");
+    assert.ok(result.includes("&lt;script&gt;"), "should escape script tags in title");
+    assert.ok(result.includes("&lt;tags&gt;"), "should escape tags in prompt");
+    assert.ok(result.includes("&amp; special"), "should escape ampersands in prompt");
   });
 });
 

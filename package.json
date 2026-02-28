@@ -23,7 +23,9 @@
     "onCommand:claudeSessions.openSession",
     "onCommand:claudeSessions.openSessionDangerously",
     "onCommand:claudeSessions.openPromptPreview",
-    "onCommand:claudeSessions.focusView"
+    "onCommand:claudeSessions.focusView",
+    "onCommand:claudeSessions.search",
+    "onCommand:claudeSessions.clearFilter"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -57,6 +59,16 @@
       {
         "command": "claudeSessions.focusView",
         "title": "Focus Claude Sessions View"
+      },
+      {
+        "command": "claudeSessions.search",
+        "title": "Search Claude Sessions",
+        "icon": "$(search)"
+      },
+      {
+        "command": "claudeSessions.clearFilter",
+        "title": "Clear Session Filter",
+        "icon": "$(close)"
       }
     ],
     "views": {
@@ -92,6 +104,26 @@
         {
           "command": "claudeSessions.refresh",
           "when": "view == claudeSessionsSidebarView",
+          "group": "navigation"
+        },
+        {
+          "command": "claudeSessions.search",
+          "when": "view == claudeSessionsExplorer",
+          "group": "navigation"
+        },
+        {
+          "command": "claudeSessions.search",
+          "when": "view == claudeSessionsSidebarView",
+          "group": "navigation"
+        },
+        {
+          "command": "claudeSessions.clearFilter",
+          "when": "view == claudeSessionsExplorer && claudeSessions.filterActive",
+          "group": "navigation"
+        },
+        {
+          "command": "claudeSessions.clearFilter",
+          "when": "view == claudeSessionsSidebarView && claudeSessions.filterActive",
           "group": "navigation"
         }
       ],
