@@ -1,15 +1,7 @@
-# Claude Session VS Code Extension
+# Claude Session Explorer - A VS Code Extension
 
-[![CI](https://github.com/ShahadIshraq/claude-session-vs-code-extension/actions/workflows/ci.yml/badge.svg)](https://github.com/ShahadIshraq/claude-session-vs-code-extension/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/ShahadIshraq/claude-session-vs-code-extension)](https://github.com/ShahadIshraq/claude-session-vs-code-extension/releases)
-[![Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/ShahadIshraq.vscode-claude-sessions)](https://marketplace.visualstudio.com/items?itemName=ShahadIshraq.vscode-claude-sessions)
-[![Installs](https://img.shields.io/visual-studio-marketplace/i/ShahadIshraq.vscode-claude-sessions)](https://marketplace.visualstudio.com/items?itemName=ShahadIshraq.vscode-claude-sessions)
-[![Rating](https://img.shields.io/visual-studio-marketplace/r/ShahadIshraq.vscode-claude-sessions)](https://marketplace.visualstudio.com/items?itemName=ShahadIshraq.vscode-claude-sessions)
-[![License](https://img.shields.io/github/license/ShahadIshraq/claude-session-vs-code-extension)](LICENSE)
-[![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](package.json)
-[![VS Code](https://img.shields.io/badge/vscode-%3E%3D1.90.0-blue)](package.json)
-[![Issues](https://img.shields.io/github/issues/ShahadIshraq/claude-session-vs-code-extension)](https://github.com/ShahadIshraq/claude-session-vs-code-extension/issues)
-[![Stars](https://img.shields.io/github/stars/ShahadIshraq/claude-session-vs-code-extension)](https://github.com/ShahadIshraq/claude-session-vs-code-extension)
+[![CI](https://github.com/ShahadIshraq/claude-session-vs-code-extension/actions/workflows/ci.yml/badge.svg)](https://github.com/ShahadIshraq/claude-session-vs-code-extension/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/v/release/ShahadIshraq/claude-session-vs-code-extension)](https://github.com/ShahadIshraq/claude-session-vs-code-extension/releases) [![Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/ShahadIshraq.vscode-claude-sessions)](https://marketplace.visualstudio.com/items?itemName=ShahadIshraq.vscode-claude-sessions) [![Installs](https://img.shields.io/visual-studio-marketplace/i/ShahadIshraq.vscode-claude-sessions)](https://marketplace.visualstudio.com/items?itemName=ShahadIshraq.vscode-claude-sessions) [![Rating](https://img.shields.io/visual-studio-marketplace/r/ShahadIshraq.vscode-claude-sessions)](https://marketplace.visualstudio.com/items?itemName=ShahadIshraq.vscode-claude-sessions)
+[![License](https://img.shields.io/github/license/ShahadIshraq/claude-session-vs-code-extension)](LICENSE) [![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](package.json) [![VS Code](https://img.shields.io/badge/vscode-%3E%3D1.90.0-blue)](package.json) [![Issues](https://img.shields.io/github/issues/ShahadIshraq/claude-session-vs-code-extension)](https://github.com/ShahadIshraq/claude-session-vs-code-extension/issues) [![Stars](https://img.shields.io/github/stars/ShahadIshraq/claude-session-vs-code-extension)](https://github.com/ShahadIshraq/claude-session-vs-code-extension)
 
 A VS Code extension that lets you browse Claude Code sessions for your current workspace, inspect user prompts, and resume sessions directly in a terminal.
 
