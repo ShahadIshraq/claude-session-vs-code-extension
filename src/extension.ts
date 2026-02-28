@@ -3,7 +3,7 @@ import { ClaudeSessionDiscoveryService } from "./discovery";
 import { SessionNode, SessionPromptNode } from "./models";
 import { registerSearchCommands } from "./search/searchCommand";
 import { ClaudeTerminalService } from "./terminal";
-import { ClaudeSessionsTreeDataProvider } from "./treeProvider";
+import { ClaudeSessionsTreeDataProvider, truncateForTreeLabel } from "./treeProvider";
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   const outputChannel = vscode.window.createOutputChannel("Claude Sessions");
@@ -112,7 +112,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }
 
       const content = buildPromptPreviewDocument(node);
-      const uri = promptPreviewProvider.setContent(`${node.sessionId}-${node.promptId}`, content);
+      const truncatedTitle = truncateForTreeLabel(node.promptTitle, 35);
+      const uri = promptPreviewProvider.setContent(`${truncatedTitle}-${node.promptId}`, content);
       const doc = await vscode.workspace.openTextDocument(uri);
       await vscode.window.showTextDocument(doc, {
         preview: true,

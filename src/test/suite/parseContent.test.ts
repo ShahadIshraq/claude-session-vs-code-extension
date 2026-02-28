@@ -5,7 +5,7 @@ import * as path from "path";
 import { parseSessionContent } from "../../search/parseContent";
 
 const FIXTURES = path.resolve(__dirname, "../fixtures/");
-const CONTENT_CAP_BYTES = 200 * 1024;
+const CONTENT_CAP_CHARS = 200 * 1024;
 
 describe("parseSessionContent", () => {
   let tmpDir: string;
@@ -177,12 +177,12 @@ describe("parseSessionContent", () => {
 
     // Result should be capped — well under 250KB of text
     assert.ok(
-      result.length <= CONTENT_CAP_BYTES + 2000, // allow a bit of overshoot due to last message
+      result.length <= CONTENT_CAP_CHARS + 2000, // allow a bit of overshoot due to last message
       `result length ${String(result.length)} should be close to the 200KB cap`
     );
     // Result should be substantial — close to 200KB
     assert.ok(
-      result.length >= CONTENT_CAP_BYTES * 0.9,
+      result.length >= CONTENT_CAP_CHARS * 0.9,
       `result length ${String(result.length)} should be close to 200KB (within 10%)`
     );
 

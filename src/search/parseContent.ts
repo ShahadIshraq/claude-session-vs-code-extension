@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as readline from "readline";
 import { extractText, isDisplayableUserPrompt, isRecord } from "../discovery/content";
 
-const CONTENT_CAP_BYTES = 200 * 1024;
+const CONTENT_CAP_CHARS = 200 * 1024;
 
 export async function parseSessionContent(transcriptPath: string, log: (msg: string) => void): Promise<string> {
   const stream = fs.createReadStream(transcriptPath, { encoding: "utf8" });
@@ -54,7 +54,7 @@ export async function parseSessionContent(transcriptPath: string, log: (msg: str
         continue;
       }
 
-      if (totalLength >= CONTENT_CAP_BYTES) {
+      if (totalLength >= CONTENT_CAP_CHARS) {
         capped = true;
         break;
       }
