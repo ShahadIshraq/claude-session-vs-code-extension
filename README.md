@@ -1,4 +1,4 @@
-# Claude Session Explorer - A VS Code Extension
+<h1 align="center">Claude Session Explorer - A VS Code Extension</h1>
 
 <p align="center">
   <a href="https://github.com/ShahadIshraq/claude-session-vs-code-extension/actions/workflows/ci.yml"><img src="https://github.com/ShahadIshraq/claude-session-vs-code-extension/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
