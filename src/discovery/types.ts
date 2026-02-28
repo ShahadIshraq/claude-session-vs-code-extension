@@ -54,7 +54,22 @@ export interface SessionTitleSourceOptions {
   readonly firstUserRaw?: string;
 }
 
+export interface CachedContentText {
+  readonly mtimeMs: number;
+  readonly contentText: string;
+}
+
+export interface SearchableEntry {
+  readonly sessionId: string;
+  readonly transcriptPath: string;
+  readonly title: string;
+  readonly cwd: string;
+  readonly updatedAt: number;
+  readonly contentText: string;
+}
+
 export interface ISessionDiscoveryService {
   discover(workspaceFolders: readonly import("vscode").WorkspaceFolder[]): Promise<DiscoveryResult>;
   getUserPrompts(session: import("../models").SessionNode): Promise<SessionPrompt[]>;
+  getSearchableEntries(workspaceFolders: readonly import("vscode").WorkspaceFolder[]): Promise<SearchableEntry[]>;
 }

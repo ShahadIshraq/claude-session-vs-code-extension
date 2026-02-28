@@ -17,6 +17,7 @@ function makeMockDiscoveryService(overrides: Partial<ISessionDiscoveryService> =
   return {
     discover: (): Promise<DiscoveryResult> => Promise.resolve({ sessionsByWorkspace: new Map() }),
     getUserPrompts: (): Promise<SessionPrompt[]> => Promise.resolve([]),
+    getSearchableEntries: (): Promise<import("../../discovery/types").SearchableEntry[]> => Promise.resolve([]),
     ...overrides
   };
 }
