@@ -72,6 +72,13 @@ export class ClaudeSessionDiscoveryService implements ISessionDiscoveryService {
       }
     }
 
+    // Also prune prompt cache
+    for (const cachedPath of this.promptCacheByPath.keys()) {
+      if (!fileSet.has(cachedPath)) {
+        this.promptCacheByPath.delete(cachedPath);
+      }
+    }
+
     const precomputed = precomputeWorkspacePaths(workspaceFolders);
     const byWorkspaceAndSession = new Map<string, Map<string, SessionNode>>();
     for (const workspace of workspaceFolders) {

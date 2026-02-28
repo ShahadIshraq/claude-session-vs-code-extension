@@ -311,4 +311,161 @@ describe("parseAllUserPrompts", () => {
       "timestamps should be in ascending order"
     );
   });
+
+  // ---------------------------------------------------------------------------
+  // Test 13: responseRaw — single assistant response captured on preceding user prompt
+  // ---------------------------------------------------------------------------
+  it("captures a single assistant response as responseRaw on the preceding user prompt", async () => {
+    const lines = [
+      JSON.stringify({
+        type: "user",
+        sessionId: "sess-resp",
+        uuid: "u1",
+        timestamp: "2025-06-01T10:00:00Z",
+        message: { role: "user", content: "What is recursion?" }
+      }),
+      JSON.stringify({
+        type: "assistant",
+        sessionId: "sess-resp",
+        uuid: "a1",
+        message: { role: "assistant", content: "Recursion is when a function calls itself." }
+      })
+    ];
+    const filePath = path.join(tmpDir, "response-single.jsonl");
+    await fsp.writeFile(filePath, lines.join("\n"), "utf8");
+
+    const prompts = await parseAllUserPrompts(filePath, "fallback-sess", noop);
+
+    assert.strictEqual(prompts.length, 1);
+    assert.strictEqual(prompts[0].responseRaw, "Recursion is when a function calls itself.");
+  });
+
+  // ---------------------------------------------------------------------------
+  // Test 14: responseRaw — multiple sequential assistant responses concatenated
+  // ---------------------------------------------------------------------------
+  it("concatenates multiple sequential assistant responses with newline in responseRaw", async () => {
+    const lines = [
+      JSON.stringify({
+        type: "user",
+        sessionId: "sess-multi-resp",
+        uuid: "u1",
+        timestamp: "2025-06-01T10:00:00Z",
+        message: { role: "user", content: "Explain closures" }
+      }),
+      JSON.stringify({
+        type: "assistant",
+        sessionId: "sess-multi-resp",
+        uuid: "a1",
+        message: { role: "assistant", content: "A closure is a function that captures its enclosing scope." }
+      }),
+      JSON.stringify({
+        type: "assistant",
+        sessionId: "sess-multi-resp",
+        uuid: "a2",
+        message: { role: "assistant", content: "This allows the inner function to access outer variables." }
+      })
+    ];
+    const filePath = path.join(tmpDir, "response-multi.jsonl");
+    await fsp.writeFile(filePath, lines.join("\n"), "utf8");
+
+    const prompts = await parseAllUserPrompts(filePath, "fallback-sess", noop);
+
+    assert.strictEqual(prompts.length, 1);
+    assert.strictEqual(
+      prompts[0].responseRaw,
+      "A closure is a function that captures its enclosing scope.\nThis allows the inner function to access outer variables."
+    );
+  });
+
+  // ---------------------------------------------------------------------------
+  // Test 15: responseRaw — undefined when no assistant response follows
+  // ---------------------------------------------------------------------------
+  it("leaves responseRaw undefined when no assistant response follows the user prompt", async () => {
+    const lines = [
+      JSON.stringify({
+        type: "user",
+        sessionId: "sess-no-resp",
+        uuid: "u1",
+        timestamp: "2025-06-01T10:00:00Z",
+        message: { role: "user", content: "What is a monad?" }
+      })
+    ];
+    const filePath = path.join(tmpDir, "response-none.jsonl");
+    await fsp.writeFile(filePath, lines.join("\n"), "utf8");
+
+    const prompts = await parseAllUserPrompts(filePath, "fallback-sess", noop);
+
+    assert.strictEqual(prompts.length, 1);
+    assert.strictEqual(prompts[0].responseRaw, undefined);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Test 16: responseRaw — empty and whitespace-only assistant responses excluded
+  // ---------------------------------------------------------------------------
+  it("excludes empty and whitespace-only assistant responses from responseRaw", async () => {
+    const lines = [
+      JSON.stringify({
+        type: "user",
+        sessionId: "sess-empty-resp",
+        uuid: "u1",
+        timestamp: "2025-06-01T10:00:00Z",
+        message: { role: "user", content: "Tell me about generics" }
+      }),
+      JSON.stringify({
+        type: "assistant",
+        sessionId: "sess-empty-resp",
+        uuid: "a1",
+        message: { role: "assistant", content: "" }
+      }),
+      JSON.stringify({
+        type: "assistant",
+        sessionId: "sess-empty-resp",
+        uuid: "a2",
+        message: { role: "assistant", content: "   \t\n  " }
+      }),
+      JSON.stringify({
+        type: "assistant",
+        sessionId: "sess-empty-resp",
+        uuid: "a3",
+        message: { role: "assistant", content: "Generics allow type-safe reusable code." }
+      })
+    ];
+    const filePath = path.join(tmpDir, "response-empty.jsonl");
+    await fsp.writeFile(filePath, lines.join("\n"), "utf8");
+
+    const prompts = await parseAllUserPrompts(filePath, "fallback-sess", noop);
+
+    assert.strictEqual(prompts.length, 1);
+    assert.strictEqual(prompts[0].responseRaw, "Generics allow type-safe reusable code.");
+  });
+
+  // ---------------------------------------------------------------------------
+  // Test 17: responseRaw — truncated at MAX_RESPONSE_LENGTH (50 000 chars)
+  // ---------------------------------------------------------------------------
+  it("truncates responseRaw at 50 000 characters", async () => {
+    const longResponse = "x".repeat(60_000);
+    const lines = [
+      JSON.stringify({
+        type: "user",
+        sessionId: "sess-trunc",
+        uuid: "u1",
+        timestamp: "2025-06-01T10:00:00Z",
+        message: { role: "user", content: "Generate a long response" }
+      }),
+      JSON.stringify({
+        type: "assistant",
+        sessionId: "sess-trunc",
+        uuid: "a1",
+        message: { role: "assistant", content: longResponse }
+      })
+    ];
+    const filePath = path.join(tmpDir, "response-truncate.jsonl");
+    await fsp.writeFile(filePath, lines.join("\n"), "utf8");
+
+    const prompts = await parseAllUserPrompts(filePath, "fallback-sess", noop);
+
+    assert.strictEqual(prompts.length, 1);
+    assert.ok(prompts[0].responseRaw !== undefined, "responseRaw should be defined");
+    assert.strictEqual(prompts[0].responseRaw!.length, 50_000, "responseRaw should be truncated to 50000 chars");
+  });
 });

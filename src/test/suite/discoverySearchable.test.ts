@@ -483,7 +483,7 @@ describe("ClaudeSessionDiscoveryService.getSearchableEntries()", () => {
     const entry = entries.find((e) => e.sessionId === "sess-case");
     assert.ok(entry !== undefined);
 
-    // Verify case-insensitive search works (as searchCommand.ts does it)
+    // Verify case-insensitive search works (as the search command does it)
     const lowerContent = entry.contentText.toLowerCase();
     assert.ok(
       lowerContent.indexOf("dependency injection") !== -1,

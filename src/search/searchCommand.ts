@@ -1,154 +1,73 @@
-import * as path from "path";
 import * as vscode from "vscode";
-import { ISessionDiscoveryService, SearchableEntry } from "../discovery/types";
-import { formatAgeToken } from "../treeProvider";
+import { ISessionDiscoveryService } from "../discovery/types";
+import { ClaudeSessionsTreeDataProvider } from "../treeProvider";
 
-const MAX_RESULTS = 50;
-const DEBOUNCE_MS = 250;
-const SNIPPET_CONTEXT_CHARS = 40;
-const MIN_QUERY_LENGTH = 2;
-
-export function extractSnippet(text: string, matchIndex: number, matchLength: number): string {
-  const start = Math.max(0, matchIndex - SNIPPET_CONTEXT_CHARS);
-  const end = Math.min(text.length, matchIndex + matchLength + SNIPPET_CONTEXT_CHARS);
-
-  let snippet = text
-    .slice(start, end)
-    .replace(/[\r\n\t]+/g, " ")
-    .replace(/\s{2,}/g, " ");
-
-  if (start > 0) {
-    snippet = "..." + snippet;
-  }
-  if (end < text.length) {
-    snippet = snippet + "...";
-  }
-
-  return snippet;
-}
-
-export function registerSearchCommand(
+export function registerSearchCommands(
   context: vscode.ExtensionContext,
   discovery: ISessionDiscoveryService,
-  outputChannel: vscode.OutputChannel
+  treeProvider: ClaudeSessionsTreeDataProvider,
+  _outputChannel: vscode.OutputChannel,
+  treeViews: { explorer: vscode.TreeView<any>; sidebar: vscode.TreeView<any> }
 ): void {
-  const disposable = vscode.commands.registerCommand("claudeSessions.search", () => {
-    const quickPick = vscode.window.createQuickPick();
-    quickPick.placeholder = "Search across all session contents...";
-    quickPick.matchOnDescription = false;
-    quickPick.matchOnDetail = false;
-
-    let cachedEntries: SearchableEntry[] | undefined;
-    let debounceTimer: ReturnType<typeof setTimeout> | undefined;
-
-    const loadEntries = async (): Promise<void> => {
-      quickPick.busy = true;
-      try {
-        const workspaceFolders = vscode.workspace.workspaceFolders ?? [];
-        cachedEntries = await discovery.getSearchableEntries(workspaceFolders);
-        outputChannel.appendLine(`[search] loaded ${String(cachedEntries.length)} searchable entries`);
-      } catch (error) {
-        outputChannel.appendLine(`[search] failed to load entries: ${String(error)}`);
-        cachedEntries = [];
-      } finally {
-        quickPick.busy = false;
-      }
-
-      // Trigger a search with the current value after entries are loaded
-      if (quickPick.value.length >= MIN_QUERY_LENGTH) {
-        performSearch(quickPick.value);
-      }
-    };
-
-    const performSearch = (query: string): void => {
-      if (!cachedEntries) {
-        return;
-      }
-
-      if (query.length < MIN_QUERY_LENGTH) {
-        quickPick.items = [];
-        return;
-      }
-
-      const lowerQuery = query.toLowerCase();
-      const matched: Array<{ entry: SearchableEntry; matchIndex: number }> = [];
-
-      for (const entry of cachedEntries) {
-        const lowerContent = entry.contentText.toLowerCase();
-        const idx = lowerContent.indexOf(lowerQuery);
-        if (idx !== -1) {
-          matched.push({ entry, matchIndex: idx });
-        }
-      }
-
-      matched.sort((a, b) => b.entry.updatedAt - a.entry.updatedAt);
-      const limited = matched.slice(0, MAX_RESULTS);
-
-      quickPick.items = limited.map(({ entry, matchIndex }) => {
-        const workspaceFolderName = path.basename(entry.cwd);
-        const age = formatAgeToken(entry.updatedAt);
-        const snippet = extractSnippet(entry.contentText, matchIndex, query.length);
-
-        return {
-          label: `$(comment-discussion) ${entry.title}`,
-          description: `${workspaceFolderName} · ${age}`,
-          detail: snippet
-        };
+  context.subscriptions.push(
+    vscode.commands.registerCommand("claudeSessions.search", async () => {
+      const query = await vscode.window.showInputBox({
+        prompt: "Search session contents",
+        placeHolder: "Enter search keywords...",
+        value: treeProvider.getFilterQuery()
       });
-    };
 
-    quickPick.onDidChangeValue((value) => {
-      if (debounceTimer !== undefined) {
-        clearTimeout(debounceTimer);
-      }
-
-      if (value.length < MIN_QUERY_LENGTH) {
-        quickPick.items = [];
+      if (query === undefined) {
         return;
       }
 
-      debounceTimer = setTimeout(() => {
-        performSearch(value);
-      }, DEBOUNCE_MS);
-    });
-
-    quickPick.onDidAccept(() => {
-      const selected = quickPick.selectedItems[0];
-      if (!selected || !cachedEntries) {
-        quickPick.dispose();
+      if (query === "") {
+        treeProvider.setFilter(undefined, undefined);
+        await vscode.commands.executeCommand("setContext", "claudeSessions.filterActive", false);
+        treeViews.explorer.message = undefined;
+        treeViews.sidebar.message = undefined;
         return;
       }
 
-      // Find the matching entry by correlating the label
-      const selectedLabel = selected.label;
-      const entry = cachedEntries.find((e) => `$(comment-discussion) ${e.title}` === selectedLabel);
+      treeViews.explorer.message = `Searching for "${query}"...`;
+      treeViews.sidebar.message = `Searching for "${query}"...`;
 
-      if (!entry) {
-        outputChannel.appendLine(`[search] could not find entry for label: ${selectedLabel}`);
-        quickPick.dispose();
-        return;
-      }
+      let matchCount = 0;
+      await vscode.window.withProgress(
+        {
+          location: vscode.ProgressLocation.Notification,
+          title: "Searching sessions..."
+        },
+        async () => {
+          const workspaceFolders = vscode.workspace.workspaceFolders ?? [];
+          const entries = await discovery.getSearchableEntries(workspaceFolders);
+          const lowerQuery = query.toLowerCase();
+          const matchingIds = new Set<string>();
 
-      const sessionNode = {
-        kind: "session" as const,
-        sessionId: entry.sessionId,
-        cwd: entry.cwd,
-        transcriptPath: entry.transcriptPath,
-        title: entry.title,
-        updatedAt: entry.updatedAt
-      };
+          for (const entry of entries) {
+            if (entry.contentText.toLowerCase().includes(lowerQuery)) {
+              matchingIds.add(entry.sessionId);
+            }
+          }
 
-      void vscode.commands.executeCommand("claudeSessions.openSession", sessionNode);
-      quickPick.dispose();
-    });
+          matchCount = matchingIds.size;
+          treeProvider.setFilter(query, matchingIds);
+        }
+      );
 
-    quickPick.onDidHide(() => {
-      quickPick.dispose();
-    });
+      await vscode.commands.executeCommand("setContext", "claudeSessions.filterActive", true);
+      treeViews.explorer.message = `Filter: "${query}"`;
+      treeViews.sidebar.message = `Filter: "${query}"`;
+      vscode.window.showInformationMessage(`Found ${String(matchCount)} matching sessions`);
+    })
+  );
 
-    quickPick.show();
-    void loadEntries();
-  });
-
-  context.subscriptions.push(disposable);
+  context.subscriptions.push(
+    vscode.commands.registerCommand("claudeSessions.clearFilter", async () => {
+      treeProvider.setFilter(undefined, undefined);
+      await vscode.commands.executeCommand("setContext", "claudeSessions.filterActive", false);
+      treeViews.explorer.message = undefined;
+      treeViews.sidebar.message = undefined;
+    })
+  );
 }

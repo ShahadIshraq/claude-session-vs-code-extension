@@ -1,8 +1,7 @@
 import * as vscode from "vscode";
 import { ClaudeSessionDiscoveryService } from "./discovery";
 import { SessionNode, SessionPromptNode } from "./models";
-import { registerFilterCommands } from "./search/filterCommand";
-import { registerSearchCommand } from "./search/searchCommand";
+import { registerSearchCommands } from "./search/searchCommand";
 import { ClaudeTerminalService } from "./terminal";
 import { ClaudeSessionsTreeDataProvider } from "./treeProvider";
 
@@ -37,8 +36,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   context.subscriptions.push(explorerTreeView);
   context.subscriptions.push(sidebarTreeView);
 
-  registerSearchCommand(context, discovery, outputChannel);
-  registerFilterCommands(context, discovery, treeProvider, outputChannel, {
+  registerSearchCommands(context, discovery, treeProvider, outputChannel, {
     explorer: explorerTreeView,
     sidebar: sidebarTreeView
   });
@@ -61,7 +59,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   context.subscriptions.push(
     vscode.commands.registerCommand("claudeSessions.refresh", async () => {
       hasRefreshed = true;
+      explorerTreeView.message = "Refreshing sessions...";
+      sidebarTreeView.message = "Refreshing sessions...";
       await treeProvider.refresh();
+      const activeQuery = treeProvider.getFilterQuery();
+      const filterMessage = activeQuery ? `Filter: "${activeQuery}"` : undefined;
+      explorerTreeView.message = filterMessage;
+      sidebarTreeView.message = filterMessage;
     })
   );
 
