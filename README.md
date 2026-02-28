@@ -126,5 +126,5 @@ In VS Code:
 
 ## Notes
 
-- Prompt previews open using a virtual document scheme (`claude-sessions-prompt:`), so closing them does not create file delete/save prompts.
+- Prompt previews open in a WebviewPanel, so closing them does not create file delete/save prompts.
 - Session prompt list filters out command-wrapper/system-noise entries (for example command metadata wrappers).
