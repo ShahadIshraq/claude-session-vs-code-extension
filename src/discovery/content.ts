@@ -1,5 +1,15 @@
 import { TranscriptRecord } from "./types";
 
+function extractTextFromBlock(block: Record<string, unknown>): string {
+  if (typeof block.text === "string") {
+    return block.text;
+  }
+  if (typeof block.thinking === "string") {
+    return block.thinking;
+  }
+  return "";
+}
+
 export function extractText(content: unknown): string {
   if (typeof content === "string") {
     return content;
@@ -14,8 +24,7 @@ export function extractText(content: unknown): string {
         if (!part || typeof part !== "object") {
           return "";
         }
-        const text = (part as { text?: unknown }).text;
-        return typeof text === "string" ? text : "";
+        return extractTextFromBlock(part as Record<string, unknown>);
       })
       .filter((part) => part.length > 0);
 
@@ -23,10 +32,7 @@ export function extractText(content: unknown): string {
   }
 
   if (content && typeof content === "object") {
-    const text = (content as { text?: unknown }).text;
-    if (typeof text === "string") {
-      return text;
-    }
+    return extractTextFromBlock(content as Record<string, unknown>);
   }
 
   return "";
