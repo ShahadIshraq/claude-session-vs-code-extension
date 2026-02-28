@@ -7,10 +7,22 @@ export class ClaudeSessionsTreeDataProvider implements vscode.TreeDataProvider<C
 
   private sessionsByWorkspace = new Map<string, SessionNode[]>();
   private globalInfoMessage: string | undefined;
+  private filterQuery: string | undefined;
+  private filteredSessionIds: Set<string> | undefined;
 
   public readonly onDidChangeTreeData = this.onDidChangeTreeDataEmitter.event;
 
   public constructor(private readonly discoveryService: ISessionDiscoveryService) {}
+
+  public setFilter(query: string | undefined, matchingSessionIds: Set<string> | undefined): void {
+    this.filterQuery = query;
+    this.filteredSessionIds = matchingSessionIds;
+    this.onDidChangeTreeDataEmitter.fire(undefined);
+  }
+
+  public getFilterQuery(): string | undefined {
+    return this.filterQuery;
+  }
 
   public async refresh(): Promise<void> {
     const workspaceFolders = vscode.workspace.workspaceFolders ?? [];
@@ -107,6 +119,15 @@ export class ClaudeSessionsTreeDataProvider implements vscode.TreeDataProvider<C
     }
 
     const sessions = this.sessionsByWorkspace.get(element.folder.uri.toString()) ?? [];
+
+    if (this.filteredSessionIds !== undefined) {
+      const filtered = sessions.filter((s) => this.filteredSessionIds!.has(s.sessionId));
+      if (filtered.length === 0) {
+        return [this.createInfoNode("No matches in this folder.", element.folder.uri.toString())];
+      }
+      return filtered;
+    }
+
     if (sessions.length > 0) {
       return sessions;
     }
