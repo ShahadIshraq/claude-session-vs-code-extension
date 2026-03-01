@@ -40,38 +40,6 @@ export function chooseSessionTitleRaw(options: SessionTitleSourceOptions): strin
   return undefined;
 }
 
-export function parseRenameCommandArgs(rawPrompt: string): string | undefined {
-  if (!/<command-name>\s*\/rename\s*<\/command-name>/u.test(rawPrompt)) {
-    return undefined;
-  }
-
-  const match = rawPrompt.match(/<command-args>([\s\S]*?)<\/command-args>/u);
-  if (!match) {
-    return undefined;
-  }
-
-  return toNonEmptySingleLine(match[1]);
-}
-
-export function parseRenameStdoutTitle(rawPrompt: string): string | undefined {
-  const match = rawPrompt.match(/<local-command-stdout>([\s\S]*?)<\/local-command-stdout>/u);
-  if (!match) {
-    return undefined;
-  }
-
-  const stdoutText = toNonEmptySingleLine(match[1]);
-  if (!stdoutText) {
-    return undefined;
-  }
-
-  const renamePrefix = /^Session(?: and agent)? renamed to:\s*/iu;
-  if (!renamePrefix.test(stdoutText)) {
-    return undefined;
-  }
-
-  return toNonEmptySingleLine(stdoutText.replace(renamePrefix, ""));
-}
-
 export function toNonEmptySingleLine(value: unknown): string | undefined {
   if (typeof value !== "string") {
     return undefined;

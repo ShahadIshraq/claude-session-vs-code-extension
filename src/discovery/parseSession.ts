@@ -3,7 +3,7 @@ import * as readline from "readline";
 import * as vscode from "vscode";
 import { extractText, isDisplayableUserPrompt, isRecord } from "./content";
 import { isNormalizedPathWithin, isPathWithin, normalizeFsPath } from "./pathUtils";
-import { chooseSessionTitleRaw, parseRenameCommandArgs, parseRenameStdoutTitle, toNonEmptySingleLine } from "./title";
+import { chooseSessionTitleRaw, toNonEmptySingleLine } from "./title";
 import { ParsedSession } from "./types";
 
 export async function parseTranscriptFile(
@@ -67,16 +67,6 @@ export async function parseTranscriptFile(
           }
           if (!firstPromptRaw && isDisplayableUserPrompt(text)) {
             firstPromptRaw = text;
-          }
-
-          const renameArgsTitle = parseRenameCommandArgs(text);
-          if (renameArgsTitle) {
-            latestExplicitTitle = renameArgsTitle;
-          }
-
-          const renameStdoutTitle = parseRenameStdoutTitle(text);
-          if (renameStdoutTitle) {
-            latestExplicitTitle = renameStdoutTitle;
           }
         }
       }

@@ -1,7 +1,7 @@
 export { ClaudeSessionDiscoveryService } from "./service";
 export type { SessionPrompt, DiscoveryResult, ISessionDiscoveryService } from "./types";
 export { extractText, isDisplayableUserPrompt } from "./content";
-export { buildTitle, chooseSessionTitleRaw, parseRenameCommandArgs, parseRenameStdoutTitle } from "./title";
+export { buildTitle, chooseSessionTitleRaw } from "./title";
 export { isPathWithin } from "./pathUtils";
 export { collectTranscriptFiles, exists } from "./scan";
 export {

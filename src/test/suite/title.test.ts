@@ -1,11 +1,5 @@
 import * as assert from "assert";
-import {
-  buildTitle,
-  chooseSessionTitleRaw,
-  parseRenameCommandArgs,
-  parseRenameStdoutTitle,
-  toNonEmptySingleLine
-} from "../../discovery/title";
+import { buildTitle, chooseSessionTitleRaw, toNonEmptySingleLine } from "../../discovery/title";
 
 const SESSION_ID = "12345678-aaaa-bbbb-cccc-1234567890ab";
 
@@ -132,68 +126,6 @@ describe("chooseSessionTitleRaw", () => {
       firstUserRaw: "First user content"
     });
     assert.strictEqual(result, "My Session");
-  });
-});
-
-describe("parseRenameCommandArgs", () => {
-  it("extracts title from a valid rename command", () => {
-    const raw =
-      "<command-name>/rename</command-name>\n<command-message>rename</command-message>\n<command-args>My Session Name</command-args>";
-    const result = parseRenameCommandArgs(raw);
-    assert.strictEqual(result, "My Session Name");
-  });
-
-  it("returns undefined for a non-rename command", () => {
-    const raw =
-      "<command-name>/model</command-name>\n<command-message>change model</command-message>\n<command-args>claude-3</command-args>";
-    const result = parseRenameCommandArgs(raw);
-    assert.strictEqual(result, undefined);
-  });
-
-  it("returns undefined when command-args is empty", () => {
-    const raw =
-      "<command-name>/rename</command-name>\n<command-message>rename</command-message>\n<command-args></command-args>";
-    const result = parseRenameCommandArgs(raw);
-    assert.strictEqual(result, undefined);
-  });
-
-  it("returns undefined when no command-args tag is present", () => {
-    const raw = "<command-name>/rename</command-name>\n<command-message>rename</command-message>";
-    const result = parseRenameCommandArgs(raw);
-    assert.strictEqual(result, undefined);
-  });
-});
-
-describe("parseRenameStdoutTitle", () => {
-  it("extracts title from 'Session renamed to: ...' stdout", () => {
-    const raw = "<local-command-stdout>Session renamed to: my-session-title</local-command-stdout>";
-    const result = parseRenameStdoutTitle(raw);
-    assert.strictEqual(result, "my-session-title");
-  });
-
-  it("extracts title from 'Session and agent renamed to: ...' stdout", () => {
-    const raw =
-      "<local-command-stdout>Session and agent renamed to: auto-generated-session-name</local-command-stdout>";
-    const result = parseRenameStdoutTitle(raw);
-    assert.strictEqual(result, "auto-generated-session-name");
-  });
-
-  it("returns undefined for non-rename stdout content", () => {
-    const raw = "<local-command-stdout>Some other output that is not a rename</local-command-stdout>";
-    const result = parseRenameStdoutTitle(raw);
-    assert.strictEqual(result, undefined);
-  });
-
-  it("returns undefined when no local-command-stdout tag is present", () => {
-    const raw = "Session renamed to: my-session-title";
-    const result = parseRenameStdoutTitle(raw);
-    assert.strictEqual(result, undefined);
-  });
-
-  it("returns undefined when stdout content is empty after prefix removal", () => {
-    const raw = "<local-command-stdout>Session renamed to:   </local-command-stdout>";
-    const result = parseRenameStdoutTitle(raw);
-    assert.strictEqual(result, undefined);
   });
 });
 

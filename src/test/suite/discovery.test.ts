@@ -10,9 +10,7 @@ import {
   isDisplayableUserPrompt,
   isPathWithin,
   matchWorkspace,
-  parseAllUserPrompts,
-  parseRenameCommandArgs,
-  parseRenameStdoutTitle
+  parseAllUserPrompts
 } from "../../discovery";
 
 describe("discovery helpers", () => {
@@ -55,27 +53,6 @@ describe("discovery helpers", () => {
     assert.strictEqual(isDisplayableUserPrompt("<command-name>/model</command-name>"), false);
     assert.strictEqual(isDisplayableUserPrompt("agentId: abc123"), false);
     assert.strictEqual(isDisplayableUserPrompt("Implement this feature in phases"), true);
-  });
-
-  it("extracts /rename command args", () => {
-    const title = parseRenameCommandArgs(
-      "<command-name>/rename</command-name>\n<command-message>rename</command-message>\n<command-args>My Session Name</command-args>"
-    );
-    assert.strictEqual(title, "My Session Name");
-  });
-
-  it("extracts generated rename title from command stdout", () => {
-    const title = parseRenameStdoutTitle(
-      "<local-command-stdout>Session and agent renamed to: auto-generated-session-name</local-command-stdout>"
-    );
-    assert.strictEqual(title, "auto-generated-session-name");
-  });
-
-  it("ignores empty /rename args", () => {
-    const title = parseRenameCommandArgs(
-      "<command-name>/rename</command-name>\n<command-message>rename</command-message>\n<command-args></command-args>"
-    );
-    assert.strictEqual(title, undefined);
   });
 
   it("prefers latest explicit title over first prompt fallback", () => {
