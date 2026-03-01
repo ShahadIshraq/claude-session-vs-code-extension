@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { ClaudeSessionDiscoveryService } from "./discovery";
+import { renameSession } from "./rename";
 import { SessionNode, SessionPromptNode } from "./models";
 import { registerSearchCommands } from "./search/searchCommand";
 import { ClaudeTerminalService } from "./terminal";
@@ -126,6 +127,35 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       panel.webview.html = buildPromptPreviewHtml(node);
       promptPanels.set(uniqueId, panel);
       panel.onDidDispose(() => promptPanels.delete(uniqueId));
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("claudeSessions.renameSession", async (session: SessionNode) => {
+      if (!session || session.kind !== "session") {
+        vscode.window.showErrorMessage("Unable to rename session: invalid tree item payload.");
+        return;
+      }
+
+      const newTitle = await vscode.window.showInputBox({
+        prompt: "Enter a new title for this session",
+        value: session.title,
+        validateInput: (value) => (value.trim() ? null : "Title must not be empty")
+      });
+
+      if (newTitle === undefined) {
+        return;
+      }
+
+      const result = await renameSession(session.transcriptPath, session.sessionId, newTitle);
+      if (!result.success) {
+        vscode.window.showErrorMessage(`Failed to rename session: ${result.error}`);
+        outputChannel.appendLine(`[rename] Error renaming session ${session.sessionId}: ${result.error}`);
+        return;
+      }
+
+      outputChannel.appendLine(`[rename] Session ${session.sessionId} renamed to "${newTitle.trim()}".`);
+      await treeProvider.refresh();
     })
   );
 

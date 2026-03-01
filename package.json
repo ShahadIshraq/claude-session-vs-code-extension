@@ -25,7 +25,8 @@
     "onCommand:claudeSessions.openPromptPreview",
     "onCommand:claudeSessions.focusView",
     "onCommand:claudeSessions.search",
-    "onCommand:claudeSessions.clearFilter"
+    "onCommand:claudeSessions.clearFilter",
+    "onCommand:claudeSessions.renameSession"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -69,6 +70,11 @@
         "command": "claudeSessions.clearFilter",
         "title": "Clear Session Filter",
         "icon": "$(close)"
+      },
+      {
+        "command": "claudeSessions.renameSession",
+        "title": "Rename Session",
+        "icon": "$(edit)"
       }
     ],
     "views": {
@@ -157,6 +163,16 @@
           "command": "claudeSessions.openPromptPreview",
           "when": "view == claudeSessionsSidebarView && viewItem == claudeSessionPrompt",
           "group": "inline"
+        },
+        {
+          "command": "claudeSessions.renameSession",
+          "when": "view == claudeSessionsExplorer && viewItem == claudeSession",
+          "group": "1_modify"
+        },
+        {
+          "command": "claudeSessions.renameSession",
+          "when": "view == claudeSessionsSidebarView && viewItem == claudeSession",
+          "group": "1_modify"
         }
       ]
     },
