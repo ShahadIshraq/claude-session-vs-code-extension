@@ -29,6 +29,10 @@ A VS Code extension that lets you browse Claude Code sessions for your current w
 - `Open Session (Skip Permissions)` action (red terminal icon) to run:
   - `claude --dangerously-skip-permissions --resume <sessionId>`
   - protected by a confirmation modal by default
+- `Rename Session` action (edit icon): give any session a custom title.
+  - Right-click a session and choose `Rename Session`, or use the edit icon on hover.
+  - The custom title is stored inside the transcript file as a `custom-title` record.
+  - Renaming preserves the session's original timestamp, so it stays in its sorted position.
 - `Search Sessions` command: filter sessions by keyword across all prompt content.
 - `Clear Filter` command: reset the search filter and show all sessions.
 - `Refresh Claude Sessions` command.
@@ -53,6 +57,10 @@ Hover a session to reveal actions: resume in a terminal (green icon) or resume w
 Expand a session to see prompts and timestamps. Click the green or red terminal icons to resume.
 
 ![Session detail view](media/project-session-view.jpg)
+
+### Rename a session
+
+Right-click a session and select `Rename Session` to give it a custom title. The new title replaces the auto-generated one in the tree view. Renaming preserves the session's original timestamp so it stays in its sorted position.
 
 ### Search sessions
 
