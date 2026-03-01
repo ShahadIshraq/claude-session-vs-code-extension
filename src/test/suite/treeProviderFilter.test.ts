@@ -40,6 +40,7 @@ function makeMockDiscoveryService(
     discover: (): Promise<DiscoveryResult> => Promise.resolve({ sessionsByWorkspace }),
     getUserPrompts: (): Promise<SessionPrompt[]> => Promise.resolve([]),
     getSearchableEntries: (): Promise<SearchableEntry[]> => Promise.resolve([]),
+    invalidateSessionCache: () => {},
     ...overrides
   };
 }

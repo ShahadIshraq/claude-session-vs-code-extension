@@ -35,6 +35,12 @@ export class ClaudeSessionDiscoveryService implements ISessionDiscoveryService {
     this.projectsRoot = projectsRoot ?? path.join(os.homedir(), ".claude", "projects");
   }
 
+  public invalidateSessionCache(transcriptPath: string): void {
+    this.sessionCacheByPath.delete(transcriptPath);
+    this.contentCacheByPath.delete(transcriptPath);
+    this.promptCacheByPath.delete(transcriptPath);
+  }
+
   public async discover(workspaceFolders: readonly vscode.WorkspaceFolder[]): Promise<DiscoveryResult> {
     const sessionsByWorkspace = new Map<string, SessionNode[]>();
     for (const folder of workspaceFolders) {

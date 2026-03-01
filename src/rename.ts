@@ -22,7 +22,13 @@ export async function renameSession(
   });
 
   try {
+    const stat = await fsp.stat(transcriptPath);
+    const originalAtime = stat.atime;
+    const originalMtime = stat.mtime;
+
     await fsp.appendFile(transcriptPath, `\n${record}\n`, "utf8");
+
+    await fsp.utimes(transcriptPath, originalAtime, originalMtime);
     return { success: true };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);

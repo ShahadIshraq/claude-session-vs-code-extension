@@ -1,5 +1,7 @@
 import * as assert from "assert";
+import * as os from "os";
 import * as path from "path";
+import { promises as fsp } from "fs";
 import * as vscode from "vscode";
 import { parseTranscriptFile } from "../../discovery/parseSession";
 import { matchWorkspace, matchWorkspacePrecomputed, precomputeWorkspacePaths } from "../../discovery";
@@ -96,6 +98,31 @@ describe("parseTranscriptFile", () => {
     assert.ok(result !== null);
     assert.strictEqual(result.sessionId, "sess-multi-first");
     assert.strictEqual(result.cwd, "/home/user/project-a");
+  });
+
+  it("picks up an appended custom-title record as the session title", async () => {
+    const tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), "parse-test-"));
+    try {
+      const filePath = path.join(tmpDir, "session.jsonl");
+      const lines = [
+        JSON.stringify({ type: "system", sessionId: "s-ct-1", cwd: "/tmp" }),
+        JSON.stringify({
+          type: "user",
+          sessionId: "s-ct-1",
+          uuid: "p1",
+          timestamp: "2025-01-01T00:00:00Z",
+          message: { role: "user", content: "Hello" }
+        }),
+        JSON.stringify({ type: "custom-title", sessionId: "s-ct-1", customTitle: "Appended Title" })
+      ];
+      await fsp.writeFile(filePath, lines.join("\n") + "\n", "utf8");
+
+      const result = await parseTranscriptFile(filePath, noop);
+      assert.ok(result !== null);
+      assert.strictEqual(result.titleSourceRaw, "Appended Title");
+    } finally {
+      await fsp.rm(tmpDir, { recursive: true, force: true });
+    }
   });
 });
 

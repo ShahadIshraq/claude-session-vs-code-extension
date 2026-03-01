@@ -155,6 +155,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }
 
       outputChannel.appendLine(`[rename] Session ${session.sessionId} renamed to "${newTitle.trim()}".`);
+      discovery.invalidateSessionCache(session.transcriptPath);
       await treeProvider.refresh();
     })
   );
