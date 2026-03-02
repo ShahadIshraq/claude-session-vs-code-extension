@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { ClaudeSessionDiscoveryService } from "./discovery";
+import { deleteSession } from "./delete";
 import { renameSession } from "./rename";
 import { SessionNode, SessionPromptNode } from "./models";
 import { registerSearchCommands } from "./search/searchCommand";
@@ -155,6 +156,42 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }
 
       outputChannel.appendLine(`[rename] Session ${session.sessionId} renamed to "${newTitle.trim()}".`);
+      discovery.invalidateSessionCache(session.transcriptPath);
+      await treeProvider.refresh();
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("claudeSessions.deleteSession", async (session: SessionNode) => {
+      if (!session || session.kind !== "session") {
+        vscode.window.showErrorMessage("Unable to delete session: invalid tree item payload.");
+        return;
+      }
+
+      const confirmLabel = "Delete";
+      const response = await vscode.window.showWarningMessage(
+        `Delete session "${session.title}"?`,
+        {
+          modal: true,
+          detail: "This will permanently remove the session transcript and all associated data."
+        },
+        confirmLabel
+      );
+
+      if (response !== confirmLabel) {
+        return;
+      }
+
+      const result = await deleteSession(session.transcriptPath, session.sessionId);
+      if (!result.success) {
+        vscode.window.showErrorMessage(`Failed to delete session: ${result.error}`);
+        outputChannel.appendLine(`[delete] Error deleting session ${session.sessionId}: ${result.error}`);
+        return;
+      }
+
+      outputChannel.appendLine(
+        `[delete] Session ${session.sessionId} deleted. Removed paths: ${result.deletedPaths.join(", ")}`
+      );
       discovery.invalidateSessionCache(session.transcriptPath);
       await treeProvider.refresh();
     })

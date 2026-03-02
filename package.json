@@ -26,7 +26,8 @@
     "onCommand:claudeSessions.focusView",
     "onCommand:claudeSessions.search",
     "onCommand:claudeSessions.clearFilter",
-    "onCommand:claudeSessions.renameSession"
+    "onCommand:claudeSessions.renameSession",
+    "onCommand:claudeSessions.deleteSession"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -75,6 +76,11 @@
         "command": "claudeSessions.renameSession",
         "title": "Rename Session",
         "icon": "$(edit)"
+      },
+      {
+        "command": "claudeSessions.deleteSession",
+        "title": "Delete Session",
+        "icon": "$(trash)"
       }
     ],
     "views": {
@@ -173,6 +179,16 @@
           "command": "claudeSessions.renameSession",
           "when": "view == claudeSessionsSidebarView && viewItem == claudeSession",
           "group": "1_modify"
+        },
+        {
+          "command": "claudeSessions.deleteSession",
+          "when": "view == claudeSessionsExplorer && viewItem == claudeSession",
+          "group": "1_modify"
+        },
+        {
+          "command": "claudeSessions.deleteSession",
+          "when": "view == claudeSessionsSidebarView && viewItem == claudeSession",
+          "group": "1_modify"
         }
       ]
     },
@@ -195,7 +211,7 @@
     "lint:fix": "eslint src --fix",
     "format": "prettier --write \"src/**/*.ts\" \"*.{json,mjs,md}\"",
     "format:check": "prettier --check \"src/**/*.ts\" \"*.{json,mjs,md}\"",
-    "copy-fixtures": "cp -r src/test/fixtures out/test/fixtures",
+    "copy-fixtures": "rm -rf out/test/fixtures && cp -r src/test/fixtures out/test/fixtures",
     "pretest": "npm run compile && npm run copy-fixtures",
     "test": "node ./out/test/runTest.js",
     "test:coverage": "c8 node ./out/test/runTest.js",
