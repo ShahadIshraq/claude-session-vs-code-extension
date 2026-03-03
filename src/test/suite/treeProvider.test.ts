@@ -6,7 +6,7 @@ import {
   formatRelativeTime,
   truncateForTreeLabel
 } from "../../treeProvider";
-import { InfoNode, SessionNode, SessionPromptNode, WorkspaceNode } from "../../models";
+import { FilterNode, InfoNode, SessionNode, SessionPromptNode, WorkspaceNode } from "../../models";
 import { DiscoveryResult, ISessionDiscoveryService, SessionPrompt } from "../../discovery/types";
 
 // ---------------------------------------------------------------------------
@@ -303,5 +303,101 @@ describe("truncateForTreeLabel", () => {
     const value = "exactly20characters!"; // 20 chars
     assert.strictEqual(value.length, 20);
     assert.strictEqual(truncateForTreeLabel(value, 20), value);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// selectionMode tests
+// ---------------------------------------------------------------------------
+
+describe("selectionMode", () => {
+  let provider: ClaudeSessionsTreeDataProvider;
+
+  const testSession: SessionNode = {
+    kind: "session",
+    sessionId: "test-id",
+    cwd: "/tmp/test",
+    transcriptPath: "/tmp/.claude/projects/-test/test-id.jsonl",
+    title: "Test Session",
+    updatedAt: Date.now()
+  };
+
+  before(() => {
+    provider = new ClaudeSessionsTreeDataProvider(makeMockDiscoveryService());
+  });
+
+  it("selectionMode is false by default", () => {
+    assert.strictEqual(provider.selectionMode, false);
+  });
+
+  it("setSelectionMode toggles the flag", () => {
+    provider.setSelectionMode(true);
+    assert.strictEqual(provider.selectionMode, true);
+    provider.setSelectionMode(false);
+    assert.strictEqual(provider.selectionMode, false);
+  });
+
+  it("getTreeItem adds checkboxState when selectionMode is true", () => {
+    provider.setSelectionMode(true);
+    const item = provider.getTreeItem(testSession);
+    assert.strictEqual(item.checkboxState, vscode.TreeItemCheckboxState.Unchecked);
+    assert.strictEqual(item.command, undefined);
+  });
+
+  it("getTreeItem has no checkboxState when selectionMode is false", () => {
+    provider.setSelectionMode(false);
+    const item = provider.getTreeItem(testSession);
+    assert.strictEqual(item.checkboxState, undefined);
+    assert.ok(item.command !== undefined, "command should be defined when selectionMode is false");
+  });
+
+  it("getStatusMessage always returns undefined", () => {
+    provider.setSelectionMode(false);
+    assert.strictEqual(provider.getStatusMessage(), undefined);
+    provider.setSelectionMode(true);
+    assert.strictEqual(provider.getStatusMessage(), undefined);
+    provider.setFilter("some query", new Set(["test-id"]));
+    assert.strictEqual(provider.getStatusMessage(), undefined);
+    // cleanup
+    provider.setFilter(undefined, undefined);
+    provider.setSelectionMode(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// FilterNode in getChildren tests
+// ---------------------------------------------------------------------------
+
+describe("FilterNode in getChildren", () => {
+  let provider: ClaudeSessionsTreeDataProvider;
+
+  before(() => {
+    provider = new ClaudeSessionsTreeDataProvider(makeMockDiscoveryService());
+  });
+
+  it("getChildren prepends a FilterNode when filter is active", async () => {
+    provider.setFilter("test", new Set());
+    const children = await provider.getChildren(undefined);
+    assert.ok(children.length > 0, "getChildren should return at least one element");
+    const first = children[0];
+    assert.strictEqual(first.kind, "filter");
+    assert.strictEqual((first as FilterNode).query, "test");
+    // cleanup
+    provider.setFilter(undefined, undefined);
+  });
+
+  it("getChildren has no FilterNode when filter is not set", async () => {
+    provider.setFilter(undefined, undefined);
+    const children = await provider.getChildren(undefined);
+    const hasFilter = children.some((n) => n.kind === "filter");
+    assert.strictEqual(hasFilter, false, "no FilterNode should be present when no filter is set");
+  });
+
+  it("getTreeItem returns correct item for FilterNode", () => {
+    const filterNode: FilterNode = { kind: "filter", query: "myquery" };
+    const item = provider.getTreeItem(filterNode);
+    assert.ok(typeof item.label === "string", "label should be a string");
+    assert.ok((item.label as string).includes("myquery"), "label should include the query string");
+    assert.strictEqual(item.contextValue, "claudeFilter");
   });
 });

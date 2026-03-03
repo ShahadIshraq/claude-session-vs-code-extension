@@ -103,4 +103,28 @@ describe("command guard smoke tests", () => {
       // Commands may throw or show error messages; neither is an unhandled crash
     }
   });
+
+  it("claudeSessions.deleteSession with undefined payload does not throw an unhandled error", async () => {
+    try {
+      await vscode.commands.executeCommand("claudeSessions.deleteSession", undefined);
+    } catch {
+      // Commands may throw or show error messages; neither is an unhandled crash
+    }
+  });
+
+  it("claudeSessions.toggleSelectionMode does not throw an unhandled error", async () => {
+    try {
+      await vscode.commands.executeCommand("claudeSessions.toggleSelectionMode");
+    } catch {
+      // Commands may throw or show error messages; neither is an unhandled crash
+    }
+  });
+
+  it("claudeSessions.clearFilter does not throw an unhandled error", async () => {
+    try {
+      await vscode.commands.executeCommand("claudeSessions.clearFilter");
+    } catch {
+      // Commands may throw or show error messages; neither is an unhandled crash
+    }
+  });
 });
