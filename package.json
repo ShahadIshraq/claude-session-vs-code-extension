@@ -18,17 +18,7 @@
   ],
   "activationEvents": [
     "onView:claudeSessionsExplorer",
-    "onView:claudeSessionsSidebarView",
-    "onCommand:claudeSessions.refresh",
-    "onCommand:claudeSessions.openSession",
-    "onCommand:claudeSessions.openSessionDangerously",
-    "onCommand:claudeSessions.openPromptPreview",
-    "onCommand:claudeSessions.focusView",
-    "onCommand:claudeSessions.search",
-    "onCommand:claudeSessions.clearFilter",
-    "onCommand:claudeSessions.renameSession",
-    "onCommand:claudeSessions.deleteSession",
-    "onCommand:claudeSessions.toggleSelectionMode"
+    "onView:claudeSessionsSidebarView"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -93,13 +83,15 @@
       "explorer": [
         {
           "id": "claudeSessionsExplorer",
-          "name": "Claude Sessions"
+          "name": "Claude Sessions",
+          "type": "webview"
         }
       ],
       "claudeSessionsContainer": [
         {
           "id": "claudeSessionsSidebarView",
-          "name": "Sessions"
+          "name": "Sessions",
+          "type": "webview"
         }
       ]
     },
@@ -154,68 +146,6 @@
           "when": "view == claudeSessionsSidebarView && claudeSessions.hasCheckedSessions",
           "group": "navigation"
         }
-      ],
-      "view/item/context": [
-        {
-          "command": "claudeSessions.openSession",
-          "when": "view == claudeSessionsExplorer && viewItem == claudeSession",
-          "group": "inline"
-        },
-        {
-          "command": "claudeSessions.openSessionDangerously",
-          "when": "view == claudeSessionsExplorer && viewItem == claudeSession",
-          "group": "inline@2"
-        },
-        {
-          "command": "claudeSessions.openPromptPreview",
-          "when": "view == claudeSessionsExplorer && viewItem == claudeSessionPrompt",
-          "group": "inline"
-        },
-        {
-          "command": "claudeSessions.openSession",
-          "when": "view == claudeSessionsSidebarView && viewItem == claudeSession",
-          "group": "inline"
-        },
-        {
-          "command": "claudeSessions.openSessionDangerously",
-          "when": "view == claudeSessionsSidebarView && viewItem == claudeSession",
-          "group": "inline@2"
-        },
-        {
-          "command": "claudeSessions.openPromptPreview",
-          "when": "view == claudeSessionsSidebarView && viewItem == claudeSessionPrompt",
-          "group": "inline"
-        },
-        {
-          "command": "claudeSessions.renameSession",
-          "when": "view == claudeSessionsExplorer && viewItem == claudeSession",
-          "group": "1_modify"
-        },
-        {
-          "command": "claudeSessions.renameSession",
-          "when": "view == claudeSessionsSidebarView && viewItem == claudeSession",
-          "group": "1_modify"
-        },
-        {
-          "command": "claudeSessions.deleteSession",
-          "when": "view == claudeSessionsExplorer && viewItem == claudeSession",
-          "group": "2_delete"
-        },
-        {
-          "command": "claudeSessions.deleteSession",
-          "when": "view == claudeSessionsSidebarView && viewItem == claudeSession",
-          "group": "2_delete"
-        },
-        {
-          "command": "claudeSessions.clearFilter",
-          "when": "view == claudeSessionsExplorer && viewItem == claudeFilter",
-          "group": "inline"
-        },
-        {
-          "command": "claudeSessions.clearFilter",
-          "when": "view == claudeSessionsSidebarView && viewItem == claudeFilter",
-          "group": "inline"
-        }
       ]
     },
     "configuration": {
@@ -227,21 +157,7 @@
           "description": "Show a required warning confirmation before launching Claude with --dangerously-skip-permissions."
         }
       }
-    },
-    "keybindings": [
-      {
-        "command": "claudeSessions.deleteSession",
-        "key": "delete",
-        "mac": "cmd+backspace",
-        "when": "focusedView == claudeSessionsExplorer && listFocus"
-      },
-      {
-        "command": "claudeSessions.deleteSession",
-        "key": "delete",
-        "mac": "cmd+backspace",
-        "when": "focusedView == claudeSessionsSidebarView && listFocus"
-      }
-    ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
@@ -266,6 +182,9 @@
     "*.{json,mjs,md}": [
       "prettier --write"
     ]
+  },
+  "dependencies": {
+    "@vscode/codicons": "^0.0.36"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.8",
