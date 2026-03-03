@@ -33,9 +33,21 @@ A VS Code extension that lets you browse Claude Code sessions for your current w
   - Right-click a session and choose `Rename Session`, or use the edit icon on hover.
   - The custom title is stored inside the transcript file as a `custom-title` record.
   - Renaming preserves the session's original timestamp, so it stays in its sorted position.
+- `Delete Session` action: permanently remove a session transcript and all associated data.
+  - Right-click a session and choose `Delete Session`.
+  - Keyboard shortcut: `Delete` (Windows/Linux) or `Cmd+Backspace` (Mac) when a session is focused.
+- `Selection Mode` for bulk operations:
+  - Toggle via the checklist icon in the view title bar.
+  - Checkboxes appear on all sessions — check the ones you want to act on.
+  - A trash icon appears once any session is checked; click it to delete all checked sessions.
+  - Selection mode is automatically cleared after deletion or refresh.
 - `Search Sessions` command: filter sessions by keyword across all prompt content.
+  - Active filter is shown as a tree node with a hover X to clear it.
+  - The search icon is hidden while a filter is active to reduce clutter.
 - `Clear Filter` command: reset the search filter and show all sessions.
 - `Refresh Claude Sessions` command.
+  - Re-runs the active search filter against fresh data if one is set.
+  - Clears selection mode.
 - `Focus Claude Sessions View` command.
 
 ## Usage
@@ -61,6 +73,12 @@ Expand a session to see prompts and timestamps. Click the green or red terminal 
 ### Rename a session
 
 Right-click a session and select `Rename Session` to give it a custom title. The new title replaces the auto-generated one in the tree view. Renaming preserves the session's original timestamp so it stays in its sorted position.
+
+### Delete sessions
+
+Right-click a session and select `Delete Session` to permanently remove it and all associated data (subagents, environment snapshots, file history, debug logs, and tasks). You can also use `Delete` / `Cmd+Backspace` when a session is focused.
+
+For bulk deletion, click the checklist icon in the title bar to enter selection mode. Checkboxes appear on every session — check the ones you want to remove, then click the trash icon. A confirmation dialog shows how many sessions will be deleted.
 
 ### Search sessions
 
