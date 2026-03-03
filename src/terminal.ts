@@ -2,7 +2,7 @@ import { execFile } from "child_process";
 import { promisify } from "util";
 import * as vscode from "vscode";
 import { SessionNode } from "./models";
-import { truncateForTreeLabel } from "./treeProvider";
+import { truncateForTreeLabel } from "./utils/formatting";
 
 const execFileAsync = promisify(execFile);
 
