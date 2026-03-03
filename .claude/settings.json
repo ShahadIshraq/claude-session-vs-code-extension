@@ -1,0 +1,8 @@
+{
+  "skills": {
+    "release": {
+      "description": "Release a new version of the extension. Bumps version, tags, and triggers the release workflow.",
+      "path": ".claude/skills/release.md"
+    }
+  }
+}
