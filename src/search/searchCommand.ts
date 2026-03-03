@@ -1,77 +1,19 @@
 import * as vscode from "vscode";
-import { ISessionDiscoveryService } from "../discovery/types";
-import { ClaudeSessionsTreeDataProvider } from "../treeProvider";
 
 export function registerSearchCommands(
   context: vscode.ExtensionContext,
-  discovery: ISessionDiscoveryService,
-  treeProvider: ClaudeSessionsTreeDataProvider,
-  outputChannel: vscode.OutputChannel,
-  treeViews: { explorer: vscode.TreeView<any>; sidebar: vscode.TreeView<any> }
+  onFocusSearch: () => void,
+  onClearFilter: () => void
 ): void {
   context.subscriptions.push(
-    vscode.commands.registerCommand("claudeSessions.search", async () => {
-      const query = await vscode.window.showInputBox({
-        prompt: "Search session contents",
-        placeHolder: "Enter search keywords...",
-        value: treeProvider.getFilterQuery()
-      });
-
-      if (query === undefined) {
-        return;
-      }
-
-      if (query === "") {
-        treeProvider.setFilter(undefined, undefined);
-        await vscode.commands.executeCommand("setContext", "claudeSessions.filterActive", false);
-        const msg = treeProvider.getStatusMessage();
-        treeViews.explorer.message = msg;
-        treeViews.sidebar.message = msg;
-        return;
-      }
-
-      treeViews.explorer.message = `Searching for "${query}"...`;
-      treeViews.sidebar.message = `Searching for "${query}"...`;
-      outputChannel.appendLine(`[search] Starting search for query: "${query}"`);
-
-      let matchCount = 0;
-      await vscode.window.withProgress(
-        {
-          location: vscode.ProgressLocation.Notification,
-          title: "Searching sessions..."
-        },
-        async () => {
-          const workspaceFolders = vscode.workspace.workspaceFolders ?? [];
-          const entries = await discovery.getSearchableEntries(workspaceFolders);
-          const lowerQuery = query.toLowerCase();
-          const matchingIds = new Set<string>();
-
-          for (const entry of entries) {
-            if (entry.contentText.toLowerCase().includes(lowerQuery)) {
-              matchingIds.add(entry.sessionId);
-            }
-          }
-
-          matchCount = matchingIds.size;
-          outputChannel.appendLine(`[search] Found ${String(matchCount)} matching sessions for query: "${query}"`);
-          treeProvider.setFilter(query, matchingIds);
-        }
-      );
-
-      await vscode.commands.executeCommand("setContext", "claudeSessions.filterActive", true);
-      treeViews.explorer.message = treeProvider.getStatusMessage();
-      treeViews.sidebar.message = treeProvider.getStatusMessage();
-      vscode.window.showInformationMessage(`Found ${String(matchCount)} matching sessions`);
+    vscode.commands.registerCommand("claudeSessions.search", () => {
+      onFocusSearch();
     })
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("claudeSessions.clearFilter", async () => {
-      treeProvider.setFilter(undefined, undefined);
-      await vscode.commands.executeCommand("setContext", "claudeSessions.filterActive", false);
-      const msg = treeProvider.getStatusMessage();
-      treeViews.explorer.message = msg;
-      treeViews.sidebar.message = msg;
+    vscode.commands.registerCommand("claudeSessions.clearFilter", () => {
+      onClearFilter();
     })
   );
 }

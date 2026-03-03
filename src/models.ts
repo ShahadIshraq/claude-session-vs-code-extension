@@ -1,5 +1,3 @@
-import * as vscode from "vscode";
-
 export interface SessionNode {
   readonly kind: "session";
   readonly sessionId: string;
@@ -7,18 +5,6 @@ export interface SessionNode {
   readonly transcriptPath: string;
   readonly title: string;
   readonly updatedAt: number;
-}
-
-export interface WorkspaceNode {
-  readonly kind: "workspace";
-  readonly folder: vscode.WorkspaceFolder;
-}
-
-export interface InfoNode {
-  readonly kind: "info";
-  readonly workspaceFolderUri?: string;
-  readonly label: string;
-  readonly description?: string;
 }
 
 export interface SessionPromptNode {
@@ -33,10 +19,3 @@ export interface SessionPromptNode {
   readonly timestampIso?: string;
   readonly timestampMs?: number;
 }
-
-export interface FilterNode {
-  readonly kind: "filter";
-  readonly query: string;
-}
-
-export type ClaudeTreeNode = WorkspaceNode | SessionNode | InfoNode | SessionPromptNode | FilterNode;
