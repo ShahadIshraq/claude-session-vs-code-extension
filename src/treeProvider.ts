@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { ISessionDiscoveryService } from "./discovery";
-import { ClaudeTreeNode, InfoNode, SessionNode, SessionPromptNode, WorkspaceNode } from "./models";
+import { ClaudeTreeNode, FilterNode, InfoNode, SessionNode, SessionPromptNode, WorkspaceNode } from "./models";
 
 export class ClaudeSessionsTreeDataProvider implements vscode.TreeDataProvider<ClaudeTreeNode> {
   private readonly onDidChangeTreeDataEmitter = new vscode.EventEmitter<ClaudeTreeNode | undefined>();
@@ -10,6 +10,7 @@ export class ClaudeSessionsTreeDataProvider implements vscode.TreeDataProvider<C
   private filterQuery: string | undefined;
   private filteredSessionIds: Set<string> | undefined;
   private hasLoaded = false;
+  private _selectionMode = false;
 
   public readonly onDidChangeTreeData = this.onDidChangeTreeDataEmitter.event;
 
@@ -25,6 +26,19 @@ export class ClaudeSessionsTreeDataProvider implements vscode.TreeDataProvider<C
     return this.filterQuery;
   }
 
+  public setSelectionMode(enabled: boolean): void {
+    this._selectionMode = enabled;
+    this.onDidChangeTreeDataEmitter.fire(undefined);
+  }
+
+  public get selectionMode(): boolean {
+    return this._selectionMode;
+  }
+
+  public getStatusMessage(): string | undefined {
+    return undefined;
+  }
+
   public async refresh(): Promise<void> {
     const workspaceFolders = vscode.workspace.workspaceFolders ?? [];
     const result = await this.discoveryService.discover(workspaceFolders);
@@ -35,6 +49,13 @@ export class ClaudeSessionsTreeDataProvider implements vscode.TreeDataProvider<C
   }
 
   public getTreeItem(element: ClaudeTreeNode): vscode.TreeItem {
+    if (element.kind === "filter") {
+      const item = new vscode.TreeItem(`Filter: "${element.query}"`, vscode.TreeItemCollapsibleState.None);
+      item.contextValue = "claudeFilter";
+      item.iconPath = new vscode.ThemeIcon("filter");
+      return item;
+    }
+
     if (element.kind === "workspace") {
       const item = new vscode.TreeItem(element.folder.name, vscode.TreeItemCollapsibleState.Expanded);
       item.contextValue = "claudeWorkspace";
@@ -63,6 +84,10 @@ export class ClaudeSessionsTreeDataProvider implements vscode.TreeDataProvider<C
         title: "Open Claude Session",
         arguments: [element]
       };
+      if (this._selectionMode) {
+        item.checkboxState = vscode.TreeItemCheckboxState.Unchecked;
+        item.command = undefined;
+      }
       return item;
     }
 
@@ -112,14 +137,19 @@ export class ClaudeSessionsTreeDataProvider implements vscode.TreeDataProvider<C
     const workspaceFolders = vscode.workspace.workspaceFolders ?? [];
 
     if (!element) {
+      const prefix: FilterNode[] = this.filterQuery ? [{ kind: "filter", query: this.filterQuery }] : [];
+
       if (workspaceFolders.length === 0) {
-        return [this.createInfoNode("Open a folder to view Claude sessions.")];
+        return [...prefix, this.createInfoNode("Open a folder to view Claude sessions.")];
       }
 
-      return workspaceFolders.map<WorkspaceNode>((folder) => ({
-        kind: "workspace",
-        folder
-      }));
+      return [
+        ...prefix,
+        ...workspaceFolders.map<WorkspaceNode>((folder) => ({
+          kind: "workspace",
+          folder
+        }))
+      ];
     }
 
     if (element.kind === "session") {

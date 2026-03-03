@@ -24,8 +24,9 @@ export function registerSearchCommands(
       if (query === "") {
         treeProvider.setFilter(undefined, undefined);
         await vscode.commands.executeCommand("setContext", "claudeSessions.filterActive", false);
-        treeViews.explorer.message = undefined;
-        treeViews.sidebar.message = undefined;
+        const msg = treeProvider.getStatusMessage();
+        treeViews.explorer.message = msg;
+        treeViews.sidebar.message = msg;
         return;
       }
 
@@ -58,8 +59,8 @@ export function registerSearchCommands(
       );
 
       await vscode.commands.executeCommand("setContext", "claudeSessions.filterActive", true);
-      treeViews.explorer.message = `Filter: "${query}"`;
-      treeViews.sidebar.message = `Filter: "${query}"`;
+      treeViews.explorer.message = treeProvider.getStatusMessage();
+      treeViews.sidebar.message = treeProvider.getStatusMessage();
       vscode.window.showInformationMessage(`Found ${String(matchCount)} matching sessions`);
     })
   );
@@ -68,8 +69,9 @@ export function registerSearchCommands(
     vscode.commands.registerCommand("claudeSessions.clearFilter", async () => {
       treeProvider.setFilter(undefined, undefined);
       await vscode.commands.executeCommand("setContext", "claudeSessions.filterActive", false);
-      treeViews.explorer.message = undefined;
-      treeViews.sidebar.message = undefined;
+      const msg = treeProvider.getStatusMessage();
+      treeViews.explorer.message = msg;
+      treeViews.sidebar.message = msg;
     })
   );
 }

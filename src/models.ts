@@ -34,4 +34,9 @@ export interface SessionPromptNode {
   readonly timestampMs?: number;
 }
 
-export type ClaudeTreeNode = WorkspaceNode | SessionNode | InfoNode | SessionPromptNode;
+export interface FilterNode {
+  readonly kind: "filter";
+  readonly query: string;
+}
+
+export type ClaudeTreeNode = WorkspaceNode | SessionNode | InfoNode | SessionPromptNode | FilterNode;
