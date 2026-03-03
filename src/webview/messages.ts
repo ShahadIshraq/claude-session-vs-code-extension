@@ -58,5 +58,4 @@ export type WebviewToExtensionMessage =
   | { type: "toggleSessionExpand"; sessionId: string }
   | { type: "openPromptPreview"; sessionId: string; promptId: string }
   | { type: "clearFilter" }
-  | { type: "deleteChecked" }
   | { type: "search"; query: string };

@@ -173,7 +173,7 @@ export function getWebviewScript(): string {
             rows.push(
               '<div class="tree-row' + (focusedIndex === rows.length ? ' focused' : '') + '" ' +
               'data-depth="1" data-type="session" data-session-id="' + escapeHtml(session.sessionId) + '" ' +
-              'title="' + escapeHtml(session.tooltip) + '">' +
+              'data-tooltip="' + escapeHtml(session.tooltip) + '">' +
               '<span class="twistie ' + (sessionExpanded ? 'expanded' : 'collapsed') + '"></span>' +
               checkboxHtml +
               labelHtml +

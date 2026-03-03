@@ -5,7 +5,7 @@ import { getWebviewHtml, getNonce } from "./getWebviewHtml";
 import { renameSession } from "../rename";
 import { ClaudeTerminalService } from "../terminal";
 import { ISessionDiscoveryService } from "../discovery/types";
-import { SessionNode, SessionPromptNode } from "../models";
+import { SessionPromptNode } from "../models";
 import { confirmAndDeleteSessions, confirmDangerousLaunch } from "../utils/sessionActions";
 
 export class SessionTreeViewProvider implements vscode.WebviewViewProvider {
@@ -184,14 +184,6 @@ export class SessionTreeViewProvider implements vscode.WebviewViewProvider {
         this.stateManager.setFilter(undefined, undefined);
         vscode.commands.executeCommand("setContext", "claudeSessions.filterActive", false);
         break;
-
-      case "deleteChecked": {
-        const sessions: SessionNode[] = this.stateManager.getCheckedSessions();
-        if (sessions.length > 0) {
-          await confirmAndDeleteSessions(sessions, this.discovery, this.stateManager, this.outputChannel);
-        }
-        break;
-      }
 
       case "search": {
         const query = msg.query;

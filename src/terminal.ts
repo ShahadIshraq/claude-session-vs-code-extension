@@ -10,10 +10,6 @@ export interface OpenSessionOptions {
   readonly dangerouslySkipPermissions?: boolean;
 }
 
-export interface ISessionLauncher {
-  openSession(session: SessionNode, options?: OpenSessionOptions): Promise<void>;
-}
-
 /** Time to wait for shell integration before falling back to sendText. */
 export const SHELL_INTEGRATION_TIMEOUT_MS = 500;
 
