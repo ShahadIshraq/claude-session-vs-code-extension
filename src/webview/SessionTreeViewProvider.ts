@@ -55,7 +55,11 @@ export class SessionTreeViewProvider implements vscode.WebviewViewProvider {
     });
 
     // Handle messages from webview
-    webviewView.webview.onDidReceiveMessage((msg: WebviewToExtensionMessage) => this.handleMessage(msg), undefined);
+    webviewView.webview.onDidReceiveMessage((msg: WebviewToExtensionMessage) => {
+      this.handleMessage(msg).catch((err: unknown) => {
+        this.outputChannel.appendLine(`[webview] Error handling message "${msg.type}": ${String(err)}`);
+      });
+    }, undefined);
 
     webviewView.onDidDispose(() => {
       this.stateListener?.dispose();
@@ -98,11 +102,12 @@ export class SessionTreeViewProvider implements vscode.WebviewViewProvider {
 
       case "openSessionDangerously": {
         const session = this.stateManager.getSessionById(msg.sessionId);
-        if (session) {
-          const confirmed = await confirmDangerousLaunch(session.title);
-          if (confirmed) {
-            await this.terminalService.openSession(session, { dangerouslySkipPermissions: true });
-          }
+        if (!session) {
+          break;
+        }
+        const confirmed = await confirmDangerousLaunch(session.title);
+        if (confirmed) {
+          await this.terminalService.openSession(session, { dangerouslySkipPermissions: true });
         }
         break;
       }
@@ -154,16 +159,22 @@ export class SessionTreeViewProvider implements vscode.WebviewViewProvider {
         break;
 
       case "openPromptPreview": {
+        const session = this.stateManager.getSessionById(msg.sessionId);
+        const prompt = this.stateManager.getPromptById(msg.sessionId, msg.promptId);
+        if (!session || !prompt) {
+          break;
+        }
+        const promptIndex = this.stateManager.getPromptIndex(msg.sessionId, msg.promptId);
         const node: SessionPromptNode = {
           kind: "sessionPrompt",
           sessionId: msg.sessionId,
-          sessionTitle: msg.sessionTitle,
+          sessionTitle: session.title,
           promptId: msg.promptId,
-          promptIndex: msg.promptIndex,
-          promptTitle: msg.promptTitle,
-          promptRaw: msg.promptRaw,
-          responseRaw: msg.responseRaw,
-          timestampIso: msg.timestampIso
+          promptIndex: promptIndex,
+          promptTitle: prompt.promptTitle,
+          promptRaw: prompt.promptRaw,
+          responseRaw: prompt.responseRaw,
+          timestampIso: prompt.timestampIso
         };
         this.onOpenPromptPreview(node);
         break;

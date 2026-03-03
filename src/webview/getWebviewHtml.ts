@@ -34,6 +34,7 @@ export function getWebviewHtml(
     data-terminal-green-uri="${terminalGreenUri}"
     data-terminal-red-uri="${terminalRedUri}">
   </div>
+  <div id="custom-tooltip" class="custom-tooltip"></div>
   <script nonce="${nonce}">
     ${getWebviewScript()}
   </script>

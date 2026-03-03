@@ -56,17 +56,7 @@ export type WebviewToExtensionMessage =
   | { type: "toggleCheck"; sessionId: string }
   | { type: "toggleWorkspaceExpand"; workspaceUri: string }
   | { type: "toggleSessionExpand"; sessionId: string }
-  | {
-      type: "openPromptPreview";
-      promptId: string;
-      sessionId: string;
-      sessionTitle: string;
-      promptIndex: number;
-      promptTitle: string;
-      promptRaw: string;
-      responseRaw?: string;
-      timestampIso?: string;
-    }
+  | { type: "openPromptPreview"; sessionId: string; promptId: string }
   | { type: "clearFilter" }
   | { type: "deleteChecked" }
   | { type: "search"; query: string };

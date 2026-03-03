@@ -323,5 +323,30 @@ export function getWebviewStyles(): string {
       text-align: center;
       opacity: 0.7;
     }
+
+    .custom-tooltip {
+      display: none;
+      position: fixed;
+      max-width: 400px;
+      max-height: 200px;
+      padding: 4px 8px;
+      font-size: var(--vscode-font-size, 13px);
+      font-family: var(--vscode-font-family, sans-serif);
+      color: var(--vscode-editorHoverWidget-foreground, var(--vscode-foreground));
+      background: var(--vscode-editorHoverWidget-background, var(--vscode-editor-background));
+      border: 1px solid var(--vscode-editorHoverWidget-border, var(--vscode-panel-border, rgba(128,128,128,0.35)));
+      border-radius: 3px;
+      z-index: 1000;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      overflow: hidden;
+      pointer-events: none;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      line-height: 1.4;
+    }
+
+    .custom-tooltip.visible {
+      display: block;
+    }
   `;
 }

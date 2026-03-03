@@ -5,9 +5,10 @@ export function getWebviewScript(): string {
       let state = null;
       let focusedIndex = -1;
       let renamingSessionId = null;
-      const promptDataMap = new Map();
+
 
       const container = document.getElementById('tree-container');
+      const tooltipEl = document.getElementById('custom-tooltip');
       const searchContainer = document.querySelector('.search-container');
       const searchInput = document.getElementById('search-input');
       const searchClear = document.getElementById('search-clear');
@@ -65,9 +66,11 @@ export function getWebviewScript(): string {
       });
 
       function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
+        return String(text)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
       }
 
       function highlightLabel(label, ranges) {
@@ -92,7 +95,6 @@ export function getWebviewScript(): string {
         }
 
         const rows = [];
-        promptDataMap.clear();
 
         // Sync search input value with state (but don't force visibility)
         if (state.filterQuery && searchVisible && searchInput.value !== state.filterQuery) {
@@ -195,35 +197,20 @@ export function getWebviewScript(): string {
 
                 const promptLabel = highlightLabel(prompt.promptTitle, prompt.highlightRanges);
 
-                promptDataMap.set(prompt.promptId, {
-                  promptId: prompt.promptId,
-                  sessionId: prompt.sessionId,
-                  sessionTitle: prompt.sessionTitle,
-                  promptIndex: prompt.promptIndex,
-                  promptTitle: prompt.promptTitle,
-                  promptRaw: prompt.promptRaw,
-                  responseRaw: prompt.responseRaw,
-                  timestampIso: prompt.timestampIso
-                });
-
-                const promptHoverActions =
-                  '<span class="hover-actions">' +
-                  '<button class="action-btn" data-action="openPromptPreview" ' +
-                  'data-prompt-id="' + escapeHtml(prompt.promptId) + '" ' +
-                  'title="Open Prompt Preview"><span class="codicon codicon-book"></span></button>' +
-                  '</span>';
+                const promptTooltip = (prompt.promptRaw || '').slice(0, 300) +
+                  (prompt.promptRaw && prompt.promptRaw.length > 300 ? '...' : '');
 
                 rows.push(
                   '<div class="tree-row" data-depth="2" data-type="prompt" ' +
                   'data-prompt-id="' + escapeHtml(prompt.promptId) + '" ' +
                   'data-session-id="' + escapeHtml(prompt.sessionId) + '" ' +
+                  'data-tooltip="' + escapeHtml(promptTooltip) + '"' +
                   '>' +
                   '<span class="twistie leaf"></span>' +
                   matchIndicator +
                   '<span class="tree-icon"><span class="codicon codicon-book"></span></span>' +
                   '<span class="tree-label">' + promptLabel + '</span>' +
                   descriptionHtml +
-                  promptHoverActions +
                   '</div>'
                 );
               }
@@ -287,13 +274,6 @@ export function getWebviewScript(): string {
             vscode.postMessage({ type: 'toggleCheck', sessionId });
             return;
           }
-          if (action === 'openPromptPreview') {
-            const data = promptDataMap.get(actionBtn.dataset.promptId);
-            if (data) {
-              vscode.postMessage({ type: 'openPromptPreview', ...data });
-            }
-            return;
-          }
         }
 
         // Row clicks
@@ -318,10 +298,11 @@ export function getWebviewScript(): string {
             }
           }
         } else if (type === 'prompt') {
-          const data = promptDataMap.get(row.dataset.promptId);
-          if (data) {
-            vscode.postMessage({ type: 'openPromptPreview', ...data });
-          }
+          vscode.postMessage({
+            type: 'openPromptPreview',
+            sessionId: row.dataset.sessionId,
+            promptId: row.dataset.promptId
+          });
         }
       });
 
@@ -432,10 +413,11 @@ export function getWebviewScript(): string {
             } else if (type === 'session') {
               vscode.postMessage({ type: 'openSession', sessionId: row.dataset.sessionId });
             } else if (type === 'prompt') {
-              const data = promptDataMap.get(row.dataset.promptId);
-              if (data) {
-                vscode.postMessage({ type: 'openPromptPreview', ...data });
-              }
+              vscode.postMessage({
+                type: 'openPromptPreview',
+                sessionId: row.dataset.sessionId,
+                promptId: row.dataset.promptId
+              });
             }
           }
         } else if (e.key === ' ') {
@@ -487,6 +469,38 @@ export function getWebviewScript(): string {
           toggleSearch();
         }
       });
+
+      // Custom tooltip for prompt rows
+      let tooltipTimeout = null;
+      container.addEventListener('mouseenter', (e) => {
+        const row = e.target.closest('[data-tooltip]');
+        if (!row) return;
+        const text = row.dataset.tooltip;
+        if (!text) return;
+        clearTimeout(tooltipTimeout);
+        tooltipTimeout = setTimeout(() => {
+          tooltipEl.textContent = text;
+          const rect = row.getBoundingClientRect();
+          tooltipEl.style.left = (rect.left + 16) + 'px';
+          tooltipEl.style.top = (rect.bottom + 4) + 'px';
+          tooltipEl.classList.add('visible');
+        }, 400);
+      }, true);
+
+      container.addEventListener('mouseleave', (e) => {
+        const row = e.target.closest('[data-tooltip]');
+        if (!row) return;
+        clearTimeout(tooltipTimeout);
+        tooltipEl.classList.remove('visible');
+      }, true);
+
+      container.addEventListener('mousemove', (e) => {
+        const row = e.target.closest('[data-tooltip]');
+        if (!row) {
+          clearTimeout(tooltipTimeout);
+          tooltipEl.classList.remove('visible');
+        }
+      }, true);
 
       // Suppress default browser context menu
       container.addEventListener('contextmenu', (e) => {

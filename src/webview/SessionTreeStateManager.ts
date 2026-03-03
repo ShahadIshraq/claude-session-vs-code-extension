@@ -122,6 +122,23 @@ export class SessionTreeStateManager {
     return this.checkedSessionIds.size > 0;
   }
 
+  public getPromptById(sessionId: string, promptId: string): SessionPrompt | undefined {
+    const prompts = this.promptsCache.get(sessionId);
+    if (!prompts) {
+      return undefined;
+    }
+    return prompts.find((p) => p.promptId === promptId);
+  }
+
+  public getPromptIndex(sessionId: string, promptId: string): number {
+    const prompts = this.promptsCache.get(sessionId);
+    if (!prompts) {
+      return 0;
+    }
+    const idx = prompts.findIndex((p) => p.promptId === promptId);
+    return idx >= 0 ? idx : 0;
+  }
+
   public async buildWebviewState(): Promise<WebviewTreeState> {
     const workspaceFolders = vscode.workspace.workspaceFolders ?? [];
     const workspaces: WebviewWorkspaceGroup[] = [];

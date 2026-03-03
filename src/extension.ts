@@ -40,7 +40,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const panel = vscode.window.createWebviewPanel(
       "claudeSessionsPromptPreview",
       tabTitle,
-      { viewColumn: vscode.ViewColumn.Beside, preserveFocus: false },
+      { viewColumn: vscode.ViewColumn.Beside, preserveFocus: true },
       { enableScripts: false }
     );
 
