@@ -27,7 +27,8 @@
     "onCommand:claudeSessions.search",
     "onCommand:claudeSessions.clearFilter",
     "onCommand:claudeSessions.renameSession",
-    "onCommand:claudeSessions.deleteSession"
+    "onCommand:claudeSessions.deleteSession",
+    "onCommand:claudeSessions.toggleSelectionMode"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -81,6 +82,11 @@
         "command": "claudeSessions.deleteSession",
         "title": "Delete Session",
         "icon": "$(trash)"
+      },
+      {
+        "command": "claudeSessions.toggleSelectionMode",
+        "title": "Toggle Selection Mode",
+        "icon": "$(checklist)"
       }
     ],
     "views": {
@@ -120,22 +126,32 @@
         },
         {
           "command": "claudeSessions.search",
-          "when": "view == claudeSessionsExplorer",
+          "when": "view == claudeSessionsExplorer && !claudeSessions.filterActive",
           "group": "navigation"
         },
         {
           "command": "claudeSessions.search",
+          "when": "view == claudeSessionsSidebarView && !claudeSessions.filterActive",
+          "group": "navigation"
+        },
+        {
+          "command": "claudeSessions.toggleSelectionMode",
+          "when": "view == claudeSessionsExplorer",
+          "group": "navigation"
+        },
+        {
+          "command": "claudeSessions.deleteSession",
+          "when": "view == claudeSessionsExplorer && claudeSessions.hasCheckedSessions",
+          "group": "navigation"
+        },
+        {
+          "command": "claudeSessions.toggleSelectionMode",
           "when": "view == claudeSessionsSidebarView",
           "group": "navigation"
         },
         {
-          "command": "claudeSessions.clearFilter",
-          "when": "view == claudeSessionsExplorer && claudeSessions.filterActive",
-          "group": "navigation"
-        },
-        {
-          "command": "claudeSessions.clearFilter",
-          "when": "view == claudeSessionsSidebarView && claudeSessions.filterActive",
+          "command": "claudeSessions.deleteSession",
+          "when": "view == claudeSessionsSidebarView && claudeSessions.hasCheckedSessions",
           "group": "navigation"
         }
       ],
@@ -183,12 +199,22 @@
         {
           "command": "claudeSessions.deleteSession",
           "when": "view == claudeSessionsExplorer && viewItem == claudeSession",
-          "group": "1_modify"
+          "group": "2_delete"
         },
         {
           "command": "claudeSessions.deleteSession",
           "when": "view == claudeSessionsSidebarView && viewItem == claudeSession",
-          "group": "1_modify"
+          "group": "2_delete"
+        },
+        {
+          "command": "claudeSessions.clearFilter",
+          "when": "view == claudeSessionsExplorer && viewItem == claudeFilter",
+          "group": "inline"
+        },
+        {
+          "command": "claudeSessions.clearFilter",
+          "when": "view == claudeSessionsSidebarView && viewItem == claudeFilter",
+          "group": "inline"
         }
       ]
     },
@@ -201,7 +227,21 @@
           "description": "Show a required warning confirmation before launching Claude with --dangerously-skip-permissions."
         }
       }
-    }
+    },
+    "keybindings": [
+      {
+        "command": "claudeSessions.deleteSession",
+        "key": "delete",
+        "mac": "cmd+backspace",
+        "when": "focusedView == claudeSessionsExplorer && listFocus"
+      },
+      {
+        "command": "claudeSessions.deleteSession",
+        "key": "delete",
+        "mac": "cmd+backspace",
+        "when": "focusedView == claudeSessionsSidebarView && listFocus"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",

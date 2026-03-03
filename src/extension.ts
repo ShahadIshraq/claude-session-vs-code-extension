@@ -25,13 +25,55 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   };
 
   const explorerTreeView = vscode.window.createTreeView("claudeSessionsExplorer", {
-    treeDataProvider: treeProvider
+    treeDataProvider: treeProvider,
+    canSelectMany: true
   });
   const sidebarTreeView = vscode.window.createTreeView("claudeSessionsSidebarView", {
-    treeDataProvider: treeProvider
+    treeDataProvider: treeProvider,
+    canSelectMany: true
   });
+  const checkedSessions = new Map<string, SessionNode>();
   context.subscriptions.push(explorerTreeView);
   context.subscriptions.push(sidebarTreeView);
+
+  const syncHasChecked = () => {
+    vscode.commands.executeCommand("setContext", "claudeSessions.hasCheckedSessions", checkedSessions.size > 0);
+  };
+
+  context.subscriptions.push(
+    explorerTreeView.onDidChangeCheckboxState((e) => {
+      for (const [node, state] of e.items) {
+        if (node.kind === "session") {
+          if (state === vscode.TreeItemCheckboxState.Checked) {
+            checkedSessions.set(node.sessionId, node);
+          } else {
+            checkedSessions.delete(node.sessionId);
+          }
+        }
+      }
+      syncHasChecked();
+    })
+  );
+  context.subscriptions.push(
+    sidebarTreeView.onDidChangeCheckboxState((e) => {
+      for (const [node, state] of e.items) {
+        if (node.kind === "session") {
+          if (state === vscode.TreeItemCheckboxState.Checked) {
+            checkedSessions.set(node.sessionId, node);
+          } else {
+            checkedSessions.delete(node.sessionId);
+          }
+        }
+      }
+      syncHasChecked();
+    })
+  );
+
+  const syncTreeViewMessages = () => {
+    const msg = treeProvider.getStatusMessage();
+    explorerTreeView.message = msg;
+    sidebarTreeView.message = msg;
+  };
 
   registerSearchCommands(context, discovery, treeProvider, outputChannel, {
     explorer: explorerTreeView,
@@ -59,10 +101,28 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       explorerTreeView.message = "Refreshing sessions...";
       sidebarTreeView.message = "Refreshing sessions...";
       await treeProvider.refresh();
+
+      // Re-run filter against fresh data if one is active
       const activeQuery = treeProvider.getFilterQuery();
-      const filterMessage = activeQuery ? `Filter: "${activeQuery}"` : undefined;
-      explorerTreeView.message = filterMessage;
-      sidebarTreeView.message = filterMessage;
+      if (activeQuery) {
+        const workspaceFolders = vscode.workspace.workspaceFolders ?? [];
+        const entries = await discovery.getSearchableEntries(workspaceFolders);
+        const lowerQuery = activeQuery.toLowerCase();
+        const matchingIds = new Set<string>();
+        for (const entry of entries) {
+          if (entry.contentText.toLowerCase().includes(lowerQuery)) {
+            matchingIds.add(entry.sessionId);
+          }
+        }
+        treeProvider.setFilter(activeQuery, matchingIds);
+      }
+
+      // Clear selection mode
+      treeProvider.setSelectionMode(false);
+      checkedSessions.clear();
+      syncHasChecked();
+      vscode.commands.executeCommand("setContext", "claudeSessions.selectionMode", false);
+      syncTreeViewMessages();
     })
   );
 
@@ -162,39 +222,109 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("claudeSessions.deleteSession", async (session: SessionNode) => {
-      if (!session || session.kind !== "session") {
-        vscode.window.showErrorMessage("Unable to delete session: invalid tree item payload.");
-        return;
-      }
-
-      const confirmLabel = "Delete";
-      const response = await vscode.window.showWarningMessage(
-        `Delete session "${session.title}"?`,
-        {
-          modal: true,
-          detail: "This will permanently remove the session transcript and all associated data."
-        },
-        confirmLabel
-      );
-
-      if (response !== confirmLabel) {
-        return;
-      }
-
-      const result = await deleteSession(session.transcriptPath, session.sessionId);
-      if (!result.success) {
-        vscode.window.showErrorMessage(`Failed to delete session: ${result.error}`);
-        outputChannel.appendLine(`[delete] Error deleting session ${session.sessionId}: ${result.error}`);
-        return;
-      }
-
-      outputChannel.appendLine(
-        `[delete] Session ${session.sessionId} deleted. Removed paths: ${result.deletedPaths.join(", ")}`
-      );
-      discovery.invalidateSessionCache(session.transcriptPath);
-      await treeProvider.refresh();
+    vscode.commands.registerCommand("claudeSessions.toggleSelectionMode", () => {
+      const entering = !treeProvider.selectionMode;
+      checkedSessions.clear();
+      syncHasChecked();
+      treeProvider.setSelectionMode(entering);
+      vscode.commands.executeCommand("setContext", "claudeSessions.selectionMode", entering);
+      syncTreeViewMessages();
     })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "claudeSessions.deleteSession",
+      async (clicked: SessionNode | undefined, selected: SessionNode[] | undefined) => {
+        let sessions: SessionNode[];
+        if (treeProvider.selectionMode && checkedSessions.size > 0) {
+          sessions = Array.from(checkedSessions.values());
+        } else if (Array.isArray(selected) && selected.length > 0) {
+          sessions = selected.filter((n) => n.kind === "session");
+        } else if (clicked && clicked.kind === "session") {
+          sessions = [clicked];
+        } else {
+          sessions = [
+            ...explorerTreeView.selection.filter((n) => n.kind === "session"),
+            ...sidebarTreeView.selection.filter((n) => n.kind === "session")
+          ] as SessionNode[];
+        }
+
+        if (sessions.length === 0) {
+          vscode.window.showErrorMessage("Unable to delete session: no valid session selected.");
+          return;
+        }
+
+        const confirmLabel = "Delete";
+        let confirmMessage: string;
+        let confirmDetail: string;
+
+        if (sessions.length === 1) {
+          confirmMessage = `Delete session "${sessions[0].title}"?`;
+        } else {
+          confirmMessage = `Delete ${String(sessions.length)} sessions?`;
+        }
+
+        const titlesToList = sessions.slice(0, 5).map((s) => `• ${s.title}`);
+        const overflowCount = sessions.length - titlesToList.length;
+        const titleLines = overflowCount > 0 ? [...titlesToList, `...and ${String(overflowCount)} more`] : titlesToList;
+        confirmDetail =
+          (sessions.length > 1 ? titleLines.join("\n") + "\n\n" : "") +
+          "This will permanently remove the session transcript(s) and all associated data.";
+
+        const response = await vscode.window.showWarningMessage(
+          confirmMessage,
+          { modal: true, detail: confirmDetail },
+          confirmLabel
+        );
+
+        if (response !== confirmLabel) {
+          return;
+        }
+
+        let successCount = 0;
+        let failureCount = 0;
+        const uniqueTranscriptPaths = new Set<string>();
+
+        for (const session of sessions) {
+          const result = await deleteSession(session.transcriptPath, session.sessionId);
+          if (result.success) {
+            outputChannel.appendLine(
+              `[delete] Session ${session.sessionId} deleted. Removed paths: ${result.deletedPaths.join(", ")}`
+            );
+            successCount++;
+          } else {
+            outputChannel.appendLine(`[delete] Error deleting session ${session.sessionId}: ${result.error}`);
+            failureCount++;
+          }
+          uniqueTranscriptPaths.add(session.transcriptPath);
+        }
+
+        for (const transcriptPath of uniqueTranscriptPaths) {
+          discovery.invalidateSessionCache(transcriptPath);
+        }
+        await treeProvider.refresh();
+        vscode.commands.executeCommand("setContext", "claudeSessions.selectionMode", false);
+        checkedSessions.clear();
+        syncHasChecked();
+        treeProvider.setSelectionMode(false);
+        syncTreeViewMessages();
+
+        if (failureCount === 0) {
+          if (successCount === 1) {
+            vscode.window.showInformationMessage("Session deleted.");
+          } else {
+            vscode.window.showInformationMessage(`${String(successCount)} sessions deleted.`);
+          }
+        } else if (successCount > 0) {
+          vscode.window.showWarningMessage(
+            `Deleted ${String(successCount)} of ${String(sessions.length)} sessions. Some sessions could not be removed.`
+          );
+        } else {
+          vscode.window.showErrorMessage("Failed to delete session(s).");
+        }
+      }
+    )
   );
 
   context.subscriptions.push(
