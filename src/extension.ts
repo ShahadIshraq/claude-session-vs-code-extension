@@ -8,6 +8,28 @@ import { truncateForTreeLabel } from "./utils/formatting";
 import { confirmAndDeleteSessions, confirmDangerousLaunch } from "./utils/sessionActions";
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
+  const currentVersion = (
+    vscode.extensions.getExtension("ShahadIshraq.vscode-claude-sessions")?.packageJSON as
+      | { version?: string }
+      | undefined
+  )?.version as string | undefined;
+  const previousVersion = context.globalState.get<string>("extensionVersion");
+  if (previousVersion && currentVersion && previousVersion !== currentVersion) {
+    void vscode.window
+      .showInformationMessage(
+        `Claude Sessions updated to v${currentVersion}. Please reload the window for changes to take effect.`,
+        "Reload Window"
+      )
+      .then((choice) => {
+        if (choice === "Reload Window") {
+          vscode.commands.executeCommand("workbench.action.reloadWindow");
+        }
+      });
+  }
+  if (currentVersion) {
+    void context.globalState.update("extensionVersion", currentVersion);
+  }
+
   const outputChannel = vscode.window.createOutputChannel("Claude Sessions");
   const discovery = new ClaudeSessionDiscoveryService(outputChannel);
   const terminalService = new ClaudeTerminalService(outputChannel);
