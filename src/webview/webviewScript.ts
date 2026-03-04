@@ -57,7 +57,11 @@ export function getWebviewScript(): string {
           vscode.postMessage({ type: 'clearFilter' });
           hideSearch();
         }
-        e.stopPropagation();
+        // Allow clipboard shortcuts (Cmd/Ctrl+C/V/X/A) to propagate
+        // so VS Code's webview layer can handle them
+        if (!(e.metaKey || e.ctrlKey)) {
+          e.stopPropagation();
+        }
       });
 
       searchClear.addEventListener('click', () => {
@@ -329,8 +333,11 @@ export function getWebviewScript(): string {
             render();
             return;
           }
-          // Don't propagate other keys from rename input to tree navigation
-          e.stopPropagation();
+          // Don't propagate other keys from rename input to tree navigation,
+          // but allow clipboard shortcuts (Cmd/Ctrl+C/V/X/A) to propagate
+          if (!(e.metaKey || e.ctrlKey)) {
+            e.stopPropagation();
+          }
           return;
         }
       });
