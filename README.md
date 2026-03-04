@@ -6,6 +6,7 @@
   <a href="https://marketplace.visualstudio.com/items?itemName=ShahadIshraq.vscode-claude-sessions"><img src="https://img.shields.io/visual-studio-marketplace/v/ShahadIshraq.vscode-claude-sessions" alt="Marketplace Version"></a>
   <a href="https://marketplace.visualstudio.com/items?itemName=ShahadIshraq.vscode-claude-sessions"><img src="https://img.shields.io/visual-studio-marketplace/i/ShahadIshraq.vscode-claude-sessions" alt="Installs"></a>
   <a href="https://marketplace.visualstudio.com/items?itemName=ShahadIshraq.vscode-claude-sessions"><img src="https://img.shields.io/visual-studio-marketplace/r/ShahadIshraq.vscode-claude-sessions" alt="Rating"></a>
+  <a href="https://open-vsx.org/extension/ShahadIshraq/vscode-claude-sessions"><img src="https://img.shields.io/open-vsx/v/ShahadIshraq/vscode-claude-sessions" alt="OpenVSX Version"></a>
   <br>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/ShahadIshraq/claude-session-vs-code-extension" alt="License"></a>
   <a href="package.json"><img src="https://img.shields.io/badge/node-%3E%3D20-brightgreen" alt="Node"></a>
@@ -28,7 +29,7 @@ A VS Code extension that lets you browse Claude Code sessions for your current w
   - `claude --resume <sessionId>`
 - `Open Session (Skip Permissions)` action (red terminal icon) to run:
   - `claude --dangerously-skip-permissions --resume <sessionId>`
-  - protected by a confirmation modal by default
+  - protected by a confirmation modal (configurable via `claudeSessions.confirmDangerousSkipPermissions`)
 - `Rename Session` action (edit icon): give any session a custom title.
   - Right-click a session and choose `Rename Session`, or use the edit icon on hover.
   - The custom title is stored inside the transcript file as a `custom-title` record.
@@ -49,6 +50,12 @@ A VS Code extension that lets you browse Claude Code sessions for your current w
   - Re-runs the active search filter against fresh data if one is set.
   - Clears selection mode.
 - `Focus Claude Sessions View` command.
+
+## Configuration
+
+| Setting                                          | Type      | Default | Description                                                                                 |
+| ------------------------------------------------ | --------- | ------- | ------------------------------------------------------------------------------------------- |
+| `claudeSessions.confirmDangerousSkipPermissions` | `boolean` | `true`  | Show a confirmation modal before launching a session with `--dangerously-skip-permissions`. |
 
 ## Usage
 
@@ -128,7 +135,19 @@ npm run watch
 
 ## Install
 
-Download the latest `.vsix` from [GitHub Releases](https://github.com/ShahadIshraq/claude-session-vs-code-extension/releases), then install it in VS Code:
+### From Marketplace
+
+Search for **Claude Sessions Explorer** in the VS Code Extensions view, or install from the command line:
+
+```bash
+code --install-extension ShahadIshraq.vscode-claude-sessions
+```
+
+Also available on [Open VSX](https://open-vsx.org/extension/ShahadIshraq/vscode-claude-sessions) for compatible editors.
+
+### From GitHub Releases
+
+Download the latest `.vsix` from [GitHub Releases](https://github.com/ShahadIshraq/claude-session-vs-code-extension/releases), then:
 
 1. Open Command Palette (`Cmd+Shift+P`).
 2. Run `Extensions: Install from VSIX...`.
@@ -147,7 +166,7 @@ npx @vscode/vsce package
 
 This creates a `.vsix` file such as:
 
-- `vscode-claude-sessions-0.0.1.vsix`
+- `vscode-claude-sessions-x.y.z.vsix`
 
 ### Install VSIX
 
