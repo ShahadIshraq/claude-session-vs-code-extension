@@ -77,6 +77,11 @@
         "command": "claudeSessions.toggleSelectionMode",
         "title": "Toggle Selection Mode",
         "icon": "$(checklist)"
+      },
+      {
+        "command": "claudeSessions.viewSession",
+        "title": "View Session",
+        "icon": "$(eye)"
       }
     ],
     "views": {

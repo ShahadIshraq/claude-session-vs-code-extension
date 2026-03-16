@@ -6,6 +6,8 @@ import { SessionNode, SessionPromptNode } from "./models";
 import { registerSearchCommands } from "./search/searchCommand";
 import { truncateForTreeLabel } from "./utils/formatting";
 import { confirmAndDeleteSessions, confirmDangerousLaunch } from "./utils/sessionActions";
+import { buildSessionViewHtml } from "./sessionViewHtml";
+import { parseAllUserPrompts } from "./discovery/parsePrompts";
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   const currentVersion = (
@@ -71,6 +73,33 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     panel.onDidDispose(() => promptPanels.delete(uniqueId));
   };
 
+  // Session view panels (read-only full conversation)
+  const sessionViewPanels = new Map<string, vscode.WebviewPanel>();
+
+  const openSessionView = async (session: SessionNode) => {
+    const existing = sessionViewPanels.get(session.sessionId);
+    if (existing) {
+      existing.reveal(vscode.ViewColumn.Beside);
+      return;
+    }
+
+    const prompts = await parseAllUserPrompts(session.transcriptPath, session.sessionId, (msg) =>
+      outputChannel.appendLine(msg)
+    );
+
+    const tabTitle = truncateForTreeLabel(session.title, 35);
+    const panel = vscode.window.createWebviewPanel(
+      "claudeSessionsView",
+      tabTitle,
+      { viewColumn: vscode.ViewColumn.Beside, preserveFocus: true },
+      { enableScripts: false }
+    );
+
+    panel.webview.html = buildSessionViewHtml(session, prompts);
+    sessionViewPanels.set(session.sessionId, panel);
+    panel.onDidDispose(() => sessionViewPanels.delete(session.sessionId));
+  };
+
   // Create two webview providers sharing the same state
   const explorerProvider = new SessionTreeViewProvider(
     context.extensionUri,
@@ -78,7 +107,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     terminalService,
     discovery,
     outputChannel,
-    openPromptPreview
+    openPromptPreview,
+    openSessionView
   );
 
   const sidebarProvider = new SessionTreeViewProvider(
@@ -87,7 +117,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     terminalService,
     discovery,
     outputChannel,
-    openPromptPreview
+    openPromptPreview,
+    openSessionView
   );
 
   context.subscriptions.push(
@@ -182,6 +213,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         return;
       }
       openPromptPreview(node);
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("claudeSessions.viewSession", async (session: SessionNode) => {
+      if (!session || session.kind !== "session") {
+        return;
+      }
+      await openSessionView(session);
     })
   );
 

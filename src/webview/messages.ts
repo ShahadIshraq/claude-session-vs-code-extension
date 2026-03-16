@@ -57,5 +57,6 @@ export type WebviewToExtensionMessage =
   | { type: "toggleWorkspaceExpand"; workspaceUri: string }
   | { type: "toggleSessionExpand"; sessionId: string }
   | { type: "openPromptPreview"; sessionId: string; promptId: string }
+  | { type: "viewSession"; sessionId: string }
   | { type: "clearFilter" }
   | { type: "search"; query: string };
