@@ -19,7 +19,7 @@ export class SessionTreeViewProvider implements vscode.WebviewViewProvider {
     private readonly discovery: ISessionDiscoveryService,
     private readonly outputChannel: vscode.OutputChannel,
     private readonly onOpenPromptPreview: (node: SessionPromptNode) => void,
-    private readonly onViewSession: (session: SessionNode) => void
+    private readonly onViewSession: (session: SessionNode) => Promise<void>
   ) {}
 
   public resolveWebviewView(
@@ -175,7 +175,8 @@ export class SessionTreeViewProvider implements vscode.WebviewViewProvider {
           promptTitle: prompt.promptTitle,
           promptRaw: prompt.promptRaw,
           responseRaw: prompt.responseRaw,
-          timestampIso: prompt.timestampIso
+          timestampIso: prompt.timestampIso,
+          timestampMs: prompt.timestampMs
         };
         this.onOpenPromptPreview(node);
         break;
@@ -184,7 +185,7 @@ export class SessionTreeViewProvider implements vscode.WebviewViewProvider {
       case "viewSession": {
         const session = this.stateManager.getSessionById(msg.sessionId);
         if (session) {
-          this.onViewSession(session);
+          await this.onViewSession(session);
         }
         break;
       }

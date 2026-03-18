@@ -168,7 +168,7 @@ export function getWebviewScript(): string {
 
             const hoverActions = isRenaming ? '' :
               '<span class="hover-actions">' +
-              '<button class="action-btn" data-action="viewSession" data-session-id="' + escapeHtml(session.sessionId) + '" title="View Session"><span class="codicon codicon-eye"></span></button>' +
+              '<button class="action-btn" data-action="viewSession" data-session-id="' + escapeHtml(session.sessionId) + '" title="View Session" aria-label="View Session"><span class="codicon codicon-eye"></span></button>' +
               '<button class="action-btn" data-action="openSession" data-session-id="' + escapeHtml(session.sessionId) + '" title="Open Session"><img src="' + (container.dataset.terminalGreenUri || '') + '" /></button>' +
               '<button class="action-btn" data-action="openSessionDangerously" data-session-id="' + escapeHtml(session.sessionId) + '" title="Open Session (Skip Permissions)"><img src="' + (container.dataset.terminalRedUri || '') + '" /></button>' +
               '<button class="action-btn" data-action="startRename" data-session-id="' + escapeHtml(session.sessionId) + '" title="Rename"><span class="codicon codicon-edit"></span></button>' +
