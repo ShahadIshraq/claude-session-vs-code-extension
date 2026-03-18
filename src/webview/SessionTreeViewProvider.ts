@@ -5,7 +5,7 @@ import { getWebviewHtml, getNonce } from "./getWebviewHtml";
 import { renameSession } from "../rename";
 import { ClaudeTerminalService } from "../terminal";
 import { ISessionDiscoveryService } from "../discovery/types";
-import { SessionPromptNode } from "../models";
+import { SessionPromptNode, SessionNode } from "../models";
 import { confirmAndDeleteSessions, confirmDangerousLaunch } from "../utils/sessionActions";
 
 export class SessionTreeViewProvider implements vscode.WebviewViewProvider {
@@ -18,7 +18,8 @@ export class SessionTreeViewProvider implements vscode.WebviewViewProvider {
     private readonly terminalService: ClaudeTerminalService,
     private readonly discovery: ISessionDiscoveryService,
     private readonly outputChannel: vscode.OutputChannel,
-    private readonly onOpenPromptPreview: (node: SessionPromptNode) => void
+    private readonly onOpenPromptPreview: (node: SessionPromptNode) => void,
+    private readonly onViewSession: (session: SessionNode) => Promise<void>
   ) {}
 
   public resolveWebviewView(
@@ -174,9 +175,18 @@ export class SessionTreeViewProvider implements vscode.WebviewViewProvider {
           promptTitle: prompt.promptTitle,
           promptRaw: prompt.promptRaw,
           responseRaw: prompt.responseRaw,
-          timestampIso: prompt.timestampIso
+          timestampIso: prompt.timestampIso,
+          timestampMs: prompt.timestampMs
         };
         this.onOpenPromptPreview(node);
+        break;
+      }
+
+      case "viewSession": {
+        const session = this.stateManager.getSessionById(msg.sessionId);
+        if (session) {
+          await this.onViewSession(session);
+        }
         break;
       }
 

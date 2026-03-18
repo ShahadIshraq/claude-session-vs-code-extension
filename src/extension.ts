@@ -6,6 +6,9 @@ import { SessionNode, SessionPromptNode } from "./models";
 import { registerSearchCommands } from "./search/searchCommand";
 import { truncateForTreeLabel } from "./utils/formatting";
 import { confirmAndDeleteSessions, confirmDangerousLaunch } from "./utils/sessionActions";
+import { buildSessionViewHtml } from "./sessionViewHtml";
+import { md, htmlDocument, renderMessageBlock, escapeHtml, formatTimestamp } from "./viewHtml";
+export { escapeHtml } from "./viewHtml";
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   const currentVersion = (
@@ -71,6 +74,43 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     panel.onDidDispose(() => promptPanels.delete(uniqueId));
   };
 
+  // Session view panels (read-only full conversation)
+  const sessionViewPanels = new Map<string, vscode.WebviewPanel>();
+  const sessionViewInFlight = new Set<string>();
+
+  const openSessionView = async (session: SessionNode) => {
+    const existing = sessionViewPanels.get(session.sessionId);
+    if (existing) {
+      existing.reveal(vscode.ViewColumn.Beside);
+      return;
+    }
+    if (sessionViewInFlight.has(session.sessionId)) {
+      return;
+    }
+    sessionViewInFlight.add(session.sessionId);
+
+    try {
+      const prompts = await discovery.getUserPrompts(session);
+
+      const tabTitle = truncateForTreeLabel(session.title, 35);
+      const panel = vscode.window.createWebviewPanel(
+        "claudeSessionsView",
+        tabTitle,
+        { viewColumn: vscode.ViewColumn.Beside, preserveFocus: true },
+        { enableScripts: false }
+      );
+
+      panel.webview.html = buildSessionViewHtml(session, prompts);
+      sessionViewPanels.set(session.sessionId, panel);
+      panel.onDidDispose(() => sessionViewPanels.delete(session.sessionId));
+    } catch (err) {
+      outputChannel.appendLine(`[viewSession] Failed to open session ${session.sessionId}: ${String(err)}`);
+      void vscode.window.showErrorMessage(`Failed to open session: ${String(err)}`);
+    } finally {
+      sessionViewInFlight.delete(session.sessionId);
+    }
+  };
+
   // Create two webview providers sharing the same state
   const explorerProvider = new SessionTreeViewProvider(
     context.extensionUri,
@@ -78,7 +118,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     terminalService,
     discovery,
     outputChannel,
-    openPromptPreview
+    openPromptPreview,
+    openSessionView
   );
 
   const sidebarProvider = new SessionTreeViewProvider(
@@ -87,7 +128,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     terminalService,
     discovery,
     outputChannel,
-    openPromptPreview
+    openPromptPreview,
+    openSessionView
   );
 
   context.subscriptions.push(
@@ -185,6 +227,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     })
   );
 
+  context.subscriptions.push(
+    vscode.commands.registerCommand("claudeSessions.viewSession", async (session: SessionNode) => {
+      if (!session || session.kind !== "session") {
+        return;
+      }
+      await openSessionView(session);
+    })
+  );
+
   // Rename command (triggers inline rename via webview)
   context.subscriptions.push(
     vscode.commands.registerCommand("claudeSessions.renameSession", async (session: SessionNode) => {
@@ -231,33 +282,44 @@ export function deactivate(): void {
   // no-op
 }
 
-export function escapeHtml(text: string): string {
-  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
-
 export function buildPromptPreviewHtml(node: SessionPromptNode): string {
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<style>
-  body { font-family: var(--vscode-font-family, sans-serif); color: var(--vscode-editor-foreground); background: var(--vscode-editor-background); padding: 16px; line-height: 1.5; }
-  h1 { font-size: 1.4em; margin-bottom: 0.5em; }
-  h2 { font-size: 1.1em; margin-top: 1.5em; }
-  ul { padding-left: 1.5em; }
-  code { background: var(--vscode-textCodeBlock-background, rgba(128,128,128,0.15)); padding: 2px 4px; border-radius: 3px; }
-  pre { background: var(--vscode-textCodeBlock-background, rgba(128,128,128,0.15)); padding: 12px; border-radius: 4px; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; }
-</style>
-</head>
-<body>
-  <h1>${escapeHtml(node.sessionTitle)}</h1>
-  <ul>
-    <li>Session ID: <code>${escapeHtml(node.sessionId)}</code></li>
-    <li>Prompt #: ${String(node.promptIndex + 1)}</li>
-    <li>Timestamp: ${escapeHtml(node.timestampIso ?? "unavailable")}</li>
-  </ul>
-  <h2>User Prompt</h2>
-  <pre>${escapeHtml(node.promptRaw)}</pre>
-</body>
-</html>`;
+  const ts = formatTimestamp(node.timestampMs, node.timestampIso) || "unavailable";
+
+  const responseBlock = node.responseRaw ? renderMessageBlock("assistant", md.render(node.responseRaw)) : "";
+
+  const extraStyles = `
+  .prompt-header {
+    border-bottom: 1px solid var(--vscode-panel-border, rgba(128,128,128,0.3));
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+  }
+  .prompt-header h1 { font-size: 1.3em; margin: 0 0 6px 0; }
+  .prompt-meta {
+    font-size: 0.85em;
+    color: var(--vscode-descriptionForeground);
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .prompt-meta code {
+    background: var(--vscode-textCodeBlock-background, rgba(128,128,128,0.15));
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-family: var(--vscode-editor-font-family, monospace);
+    font-size: 0.95em;
+  }`;
+
+  const body = `
+  <div class="prompt-header">
+    <h1>${escapeHtml(node.sessionTitle)}</h1>
+    <div class="prompt-meta">
+      <span>Session: <code>${escapeHtml(node.sessionId)}</code></span>
+      <span>Prompt #${String(node.promptIndex + 1)}</span>
+      <span>${escapeHtml(ts)}</span>
+    </div>
+  </div>
+  ${renderMessageBlock("user", md.render(node.promptRaw))}
+  ${responseBlock}`;
+
+  return htmlDocument(extraStyles, body);
 }
