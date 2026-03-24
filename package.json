@@ -2,7 +2,7 @@
   "name": "vscode-claude-sessions",
   "displayName": "Claude Sessions Explorer",
   "description": "Browse and resume Claude Code sessions from the Explorer sidebar.",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "publisher": "ShahadIshraq",
   "license": "MIT",
   "icon": "media/icon.png",
@@ -79,6 +79,11 @@
         "icon": "$(checklist)"
       },
       {
+        "command": "claudeSessions.clearSelection",
+        "title": "Unselect All",
+        "icon": "$(clear-all)"
+      },
+      {
         "command": "claudeSessions.viewSession",
         "title": "View Session",
         "icon": "$(eye)"
@@ -137,6 +142,11 @@
           "group": "navigation"
         },
         {
+          "command": "claudeSessions.clearSelection",
+          "when": "view == claudeSessionsExplorer && claudeSessions.hasCheckedSessions",
+          "group": "navigation"
+        },
+        {
           "command": "claudeSessions.deleteSession",
           "when": "view == claudeSessionsExplorer && claudeSessions.hasCheckedSessions",
           "group": "navigation"
@@ -144,6 +154,11 @@
         {
           "command": "claudeSessions.toggleSelectionMode",
           "when": "view == claudeSessionsSidebarView",
+          "group": "navigation"
+        },
+        {
+          "command": "claudeSessions.clearSelection",
+          "when": "view == claudeSessionsSidebarView && claudeSessions.hasCheckedSessions",
           "group": "navigation"
         },
         {

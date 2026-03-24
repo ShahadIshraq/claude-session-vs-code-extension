@@ -221,3 +221,99 @@ describe("SessionTreeStateManager.getPromptIndex", () => {
     assert.strictEqual(result, 9, "last prompt should be at index 9");
   });
 });
+
+// ---------------------------------------------------------------------------
+// SessionTreeStateManager.selectSessions tests
+// ---------------------------------------------------------------------------
+
+describe("SessionTreeStateManager.selectSessions", () => {
+  it("marks all provided session IDs as checked", () => {
+    const manager = new SessionTreeStateManager(createMockDiscovery());
+    manager.selectSessions(["sess-a", "sess-b", "sess-c"]);
+    assert.ok(manager.hasCheckedSessions(), "should have checked sessions after selectSessions");
+  });
+
+  it("does not uncheck sessions that were already checked", () => {
+    const manager = new SessionTreeStateManager(createMockDiscovery());
+    manager.toggleCheck("sess-a");
+    manager.selectSessions(["sess-b", "sess-c"]);
+    // sess-a was toggled on before selectSessions — it must still be checked
+    const mgr = manager as unknown as Record<string, unknown>;
+    const checked = mgr.checkedSessionIds as Set<string>;
+    assert.ok(checked.has("sess-a"), "sess-a should remain checked");
+    assert.ok(checked.has("sess-b"), "sess-b should be checked");
+    assert.ok(checked.has("sess-c"), "sess-c should be checked");
+  });
+
+  it("is idempotent — selecting the same IDs twice does not duplicate them", () => {
+    const manager = new SessionTreeStateManager(createMockDiscovery());
+    manager.selectSessions(["sess-x", "sess-y"]);
+    manager.selectSessions(["sess-x", "sess-y"]);
+    const mgr = manager as unknown as Record<string, unknown>;
+    const checked = mgr.checkedSessionIds as Set<string>;
+    assert.strictEqual(checked.size, 2, "Set should contain exactly 2 unique IDs");
+  });
+
+  it("does nothing when called with an empty array", () => {
+    const manager = new SessionTreeStateManager(createMockDiscovery());
+    manager.selectSessions([]);
+    assert.strictEqual(manager.hasCheckedSessions(), false, "should have no checked sessions");
+  });
+
+  it("fires an onDidChangeState event after selecting", (done) => {
+    const manager = new SessionTreeStateManager(createMockDiscovery());
+    const disposable = manager.onDidChangeState(() => {
+      disposable.dispose();
+      done();
+    });
+    manager.selectSessions(["sess-event"]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// SessionTreeStateManager.clearChecked / hasCheckedSessions tests
+// ---------------------------------------------------------------------------
+
+describe("SessionTreeStateManager.clearChecked", () => {
+  it("removes all checked sessions", () => {
+    const manager = new SessionTreeStateManager(createMockDiscovery());
+    manager.selectSessions(["sess-1", "sess-2", "sess-3"]);
+    assert.ok(manager.hasCheckedSessions(), "precondition: should have checked sessions");
+    manager.clearChecked();
+    assert.strictEqual(manager.hasCheckedSessions(), false, "should have no checked sessions after clearChecked");
+  });
+
+  it("hasCheckedSessions returns false on a fresh manager", () => {
+    const manager = new SessionTreeStateManager(createMockDiscovery());
+    assert.strictEqual(manager.hasCheckedSessions(), false);
+  });
+
+  it("hasCheckedSessions returns true after toggleCheck adds a session", () => {
+    const manager = new SessionTreeStateManager(createMockDiscovery());
+    manager.toggleCheck("sess-x");
+    assert.strictEqual(manager.hasCheckedSessions(), true);
+  });
+
+  it("hasCheckedSessions returns false after toggling the same session twice", () => {
+    const manager = new SessionTreeStateManager(createMockDiscovery());
+    manager.toggleCheck("sess-x");
+    manager.toggleCheck("sess-x");
+    assert.strictEqual(manager.hasCheckedSessions(), false);
+  });
+
+  it("clearChecked is safe to call when nothing is checked", () => {
+    const manager = new SessionTreeStateManager(createMockDiscovery());
+    assert.doesNotThrow(() => manager.clearChecked());
+    assert.strictEqual(manager.hasCheckedSessions(), false);
+  });
+
+  it("fires an onDidChangeState event after clearing", (done) => {
+    const manager = new SessionTreeStateManager(createMockDiscovery());
+    manager.selectSessions(["sess-a"]);
+    const disposable = manager.onDidChangeState(() => {
+      disposable.dispose();
+      done();
+    });
+    manager.clearChecked();
+  });
+});

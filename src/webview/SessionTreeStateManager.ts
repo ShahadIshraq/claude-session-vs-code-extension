@@ -71,6 +71,13 @@ export class SessionTreeStateManager {
     this.scheduleStateChange();
   }
 
+  public selectSessions(sessionIds: string[]): void {
+    for (const id of sessionIds) {
+      this.checkedSessionIds.add(id);
+    }
+    this.scheduleStateChange();
+  }
+
   public getCheckedSessions(): SessionNode[] {
     const result: SessionNode[] = [];
     for (const sessions of this.sessionsByWorkspace.values()) {

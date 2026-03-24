@@ -1,10 +1,11 @@
-import { execFile } from "child_process";
+import { execFile, exec } from "child_process";
 import { promisify } from "util";
 import * as vscode from "vscode";
 import { SessionNode } from "./models";
 import { truncateForTreeLabel } from "./utils/formatting";
 
 const execFileAsync = promisify(execFile);
+const execAsync = promisify(exec);
 
 export interface OpenSessionOptions {
   readonly dangerouslySkipPermissions?: boolean;
@@ -149,7 +150,22 @@ export class ClaudeTerminalService {
       await execFileAsync(checker, ["claude"]);
       return true;
     } catch {
-      return false;
+      // VS Code's extension host may have a limited PATH that excludes user shell
+      // profiles. Fall back to running through the user's login shell so paths
+      // from ~/.zshrc, ~/.bashrc, etc. are resolved.
+      try {
+        const shell = vscode.env.shell || "/bin/sh";
+        await execAsync(`${checker} claude`, { env: { ...process.env, SHELL: shell } });
+        return true;
+      } catch {
+        try {
+          const shell = vscode.env.shell || "/bin/sh";
+          await execAsync(`"${shell}" -l -c "${checker} claude"`);
+          return true;
+        } catch {
+          return false;
+        }
+      }
     }
   }
 }

@@ -151,6 +151,15 @@ export class SessionTreeViewProvider implements vscode.WebviewViewProvider {
         );
         break;
 
+      case "rangeCheck":
+        this.stateManager.selectSessions(msg.sessionIds);
+        vscode.commands.executeCommand(
+          "setContext",
+          "claudeSessions.hasCheckedSessions",
+          this.stateManager.hasCheckedSessions()
+        );
+        break;
+
       case "toggleWorkspaceExpand":
         this.stateManager.toggleWorkspaceExpand(msg.workspaceUri);
         break;

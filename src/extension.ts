@@ -258,6 +258,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     })
   );
 
+  // Unselect all checked sessions
+  context.subscriptions.push(
+    vscode.commands.registerCommand("claudeSessions.clearSelection", () => {
+      stateManager.clearChecked();
+      vscode.commands.executeCommand("setContext", "claudeSessions.hasCheckedSessions", false);
+    })
+  );
+
   // Delete checked sessions (toolbar button)
   context.subscriptions.push(
     vscode.commands.registerCommand("claudeSessions.deleteSession", async () => {

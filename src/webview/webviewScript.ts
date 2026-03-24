@@ -4,6 +4,7 @@ export function getWebviewScript(): string {
       const vscode = acquireVsCodeApi();
       let state = null;
       let focusedIndex = -1;
+      let lastCheckedIndex = -1;
       let renamingSessionId = null;
 
 
@@ -280,7 +281,28 @@ export function getWebviewScript(): string {
             return;
           }
           if (action === 'toggleCheck') {
-            vscode.postMessage({ type: 'toggleCheck', sessionId });
+            const checkboxRow = actionBtn.closest('.tree-row');
+            if (checkboxRow) {
+              const allRowsForCheck = getClickableRows();
+              const rowIndex = allRowsForCheck.indexOf(checkboxRow);
+              if (rowIndex !== -1) {
+                focusedIndex = rowIndex;
+                if (e.shiftKey && lastCheckedIndex !== -1) {
+                  var cbRangeStart = Math.min(lastCheckedIndex, rowIndex);
+                  var cbRangeEnd = Math.max(lastCheckedIndex, rowIndex);
+                  var cbSessionIds = allRowsForCheck
+                    .slice(cbRangeStart, cbRangeEnd + 1)
+                    .filter(function(r) { return r.dataset.type === 'session'; })
+                    .map(function(r) { return r.dataset.sessionId; });
+                  vscode.postMessage({ type: 'rangeCheck', sessionIds: cbSessionIds });
+                } else {
+                  vscode.postMessage({ type: 'toggleCheck', sessionId });
+                  lastCheckedIndex = rowIndex;
+                }
+              }
+            } else {
+              vscode.postMessage({ type: 'toggleCheck', sessionId });
+            }
             return;
           }
         }
@@ -297,7 +319,18 @@ export function getWebviewScript(): string {
           vscode.postMessage({ type: 'toggleWorkspaceExpand', workspaceUri: row.dataset.uri });
         } else if (type === 'session') {
           if (state && state.selectionMode) {
-            vscode.postMessage({ type: 'toggleCheck', sessionId: row.dataset.sessionId });
+            if (e.shiftKey && lastCheckedIndex !== -1) {
+              var rangeStart = Math.min(lastCheckedIndex, focusedIndex);
+              var rangeEnd = Math.max(lastCheckedIndex, focusedIndex);
+              var sessionIds = allRows
+                .slice(rangeStart, rangeEnd + 1)
+                .filter(function(r) { return r.dataset.type === 'session'; })
+                .map(function(r) { return r.dataset.sessionId; });
+              vscode.postMessage({ type: 'rangeCheck', sessionIds: sessionIds });
+            } else {
+              vscode.postMessage({ type: 'toggleCheck', sessionId: row.dataset.sessionId });
+              lastCheckedIndex = focusedIndex;
+            }
           } else {
             // Click on twistie toggles expand, else open session
             if (target.closest('.twistie')) {
@@ -437,6 +470,7 @@ export function getWebviewScript(): string {
           const row = allRows[focusedIndex];
           if (row && row.dataset.type === 'session' && state && state.selectionMode) {
             vscode.postMessage({ type: 'toggleCheck', sessionId: row.dataset.sessionId });
+            lastCheckedIndex = focusedIndex;
           }
         } else if (e.key === 'Delete' || (e.key === 'Backspace' && e.metaKey)) {
           e.preventDefault();
@@ -464,7 +498,11 @@ export function getWebviewScript(): string {
       window.addEventListener('message', (event) => {
         const msg = event.data;
         if (msg.type === 'updateState') {
+          var prevSelectionMode = state && state.selectionMode;
           state = msg.state;
+          if (prevSelectionMode && !state.selectionMode) {
+            lastCheckedIndex = -1;
+          }
           // Preserve focus index within bounds
           const allRowCount = container.querySelectorAll('.tree-row').length;
           if (focusedIndex >= allRowCount) {
