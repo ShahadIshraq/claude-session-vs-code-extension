@@ -213,7 +213,7 @@ describe("executeInTerminal", () => {
     const si = createMockShellIntegration();
     const terminal = createMockTerminal(si);
     let subscribeCalled = false;
-     
+
     const subscribe = ((_cb: unknown) => {
       subscribeCalled = true;
       return { dispose: () => {} };
