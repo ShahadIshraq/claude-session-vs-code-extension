@@ -41,6 +41,7 @@ jobs:
 
       - run: npm ci
       - run: npm run -w packages/${{ matrix.package }} compile
+      - run: npm run -w packages/${{ matrix.package }} package
       - run: xvfb-run -a npm run -w packages/${{ matrix.package }} test
 
   audit:
