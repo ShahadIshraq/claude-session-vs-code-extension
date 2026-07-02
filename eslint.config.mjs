@@ -4,10 +4,10 @@ import eslintConfigPrettier from "eslint-config-prettier";
 
 export default [
   {
-    ignores: ["out/**", "node_modules/**", ".vscode-test/**"]
+    ignores: ["**/out/**", "**/dist/**", "**/node_modules/**", "**/.vscode-test/**"]
   },
   {
-    files: ["src/**/*.ts"],
+    files: ["packages/*/src/**/*.ts"],
     languageOptions: {
       parser: tsParser,
       ecmaVersion: 2022,

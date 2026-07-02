@@ -9,9 +9,7 @@ export function getWebviewHtml(
   terminalGreenUri: string,
   terminalRedUri: string
 ): string {
-  const codiconsUri = webview.asWebviewUri(
-    vscode.Uri.joinPath(extensionUri, "node_modules", "@vscode/codicons", "dist", "codicon.css")
-  );
+  const codiconsUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, "dist", "codicons", "codicon.css"));
 
   return `<!DOCTYPE html>
 <html lang="en">

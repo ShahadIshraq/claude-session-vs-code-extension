@@ -2,16 +2,12 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Run Extension",
+      "name": "Run Extension (Claude Sessions)",
       "type": "extensionHost",
       "request": "launch",
-      "args": [
-        "--extensionDevelopmentPath=${workspaceFolder}"
-      ],
-      "outFiles": [
-        "${workspaceFolder}/out/**/*.js"
-      ],
-      "preLaunchTask": "npm: watch"
+      "args": ["--extensionDevelopmentPath=${workspaceFolder}/packages/claude-sessions"],
+      "outFiles": ["${workspaceFolder}/packages/claude-sessions/out/**/*.js"],
+      "preLaunchTask": "npm: watch - packages/claude-sessions"
     }
   ]
 }

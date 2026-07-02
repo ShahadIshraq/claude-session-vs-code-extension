@@ -4,6 +4,7 @@
     {
       "type": "npm",
       "script": "watch",
+      "path": "packages/claude-sessions",
       "problemMatcher": "$tsc-watch",
       "isBackground": true,
       "presentation": {

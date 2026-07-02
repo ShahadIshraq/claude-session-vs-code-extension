@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-test:
+  lint-and-format:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,10 +22,26 @@ jobs:
           cache: npm
 
       - run: npm ci
-      - run: npm run compile
       - run: npm run lint
       - run: npm run format:check
-      - run: xvfb-run -a npm run test
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # Add codex-sessions and pi-sessions here as they land
+        package: [claude-sessions]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+      - run: npm run -w packages/${{ matrix.package }} compile
+      - run: xvfb-run -a npm run -w packages/${{ matrix.package }} test
 
   audit:
     runs-on: ubuntu-latest
