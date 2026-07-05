@@ -6,8 +6,8 @@
       "type": "extensionHost",
       "request": "launch",
       "args": ["--extensionDevelopmentPath=${workspaceFolder}/packages/claude-sessions"],
-      "outFiles": ["${workspaceFolder}/packages/claude-sessions/out/**/*.js"],
-      "preLaunchTask": "npm: watch - packages/claude-sessions"
+      "outFiles": ["${workspaceFolder}/packages/claude-sessions/dist/**/*.js"],
+      "preLaunchTask": "esbuild: build extension"
     }
   ]
 }

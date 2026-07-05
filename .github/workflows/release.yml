@@ -71,6 +71,9 @@ jobs:
 
       - run: npm ci
 
+      - name: Typecheck
+        run: npm run -w ${{ needs.resolve.outputs.package_dir }} compile
+
       - name: Build production bundle
         run: npm run -w ${{ needs.resolve.outputs.package_dir }} esbuild -- --production
 
