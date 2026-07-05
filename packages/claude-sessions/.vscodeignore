@@ -6,6 +6,7 @@ esbuild.mjs
 tsconfig.json
 **/*.ts
 **/*.map
+**/*.tsbuildinfo
 node_modules/**
 .c8rc.json
 .eslintrc.json

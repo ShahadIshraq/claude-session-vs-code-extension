@@ -1,5 +1,5 @@
 {
   "reporter": ["text", "lcov"],
-  "include": ["out/**/*.js"],
-  "exclude": ["out/test/**"]
+  "include": ["out/**/*.js", "../core/out/**/*.js"],
+  "exclude": ["out/test/**", "../core/out/index.js"]
 }

@@ -4,6 +4,7 @@
     "module": "commonjs",
     "target": "ES2022",
     "outDir": "out",
+    "tsBuildInfoFile": "./out/tsconfig.tsbuildinfo",
     "lib": ["ES2022"],
     "declaration": true,
     "declarationMap": true,
