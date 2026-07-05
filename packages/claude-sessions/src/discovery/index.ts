@@ -1,8 +1,8 @@
 export { ClaudeSessionDiscoveryService } from "./service";
-export type { SessionPrompt, DiscoveryResult, ISessionDiscoveryService } from "./types";
+export type { SessionPrompt, DiscoveryResult, ISessionDiscoveryService } from "@sessions/core";
 export { extractText, isDisplayableUserPrompt } from "./content";
 export { buildTitle, chooseSessionTitleRaw } from "./title";
-export { isPathWithin } from "./pathUtils";
+export { isPathWithin, isNormalizedPathWithin } from "@sessions/core";
 export { collectTranscriptFiles, exists } from "./scan";
 export {
   parseTranscriptFile,
@@ -11,5 +11,4 @@ export {
   precomputeWorkspacePaths
 } from "./parseSession";
 export type { NormalizedWorkspaceFolder } from "./parseSession";
-export { isNormalizedPathWithin } from "./pathUtils";
 export { parseAllUserPrompts } from "./parsePrompts";

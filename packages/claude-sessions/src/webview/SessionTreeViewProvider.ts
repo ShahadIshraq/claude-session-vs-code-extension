@@ -4,8 +4,7 @@ import { WebviewToExtensionMessage } from "./messages";
 import { getWebviewHtml, getNonce } from "./getWebviewHtml";
 import { renameSession } from "../rename";
 import { ClaudeTerminalService } from "../terminal";
-import { ISessionDiscoveryService } from "../discovery/types";
-import { SessionPromptNode, SessionNode } from "../models";
+import { ISessionDiscoveryService, SessionPromptNode, SessionNode } from "@sessions/core";
 import { confirmAndDeleteSessions, confirmDangerousLaunch } from "../utils/sessionActions";
 
 export class SessionTreeViewProvider implements vscode.WebviewViewProvider {

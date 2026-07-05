@@ -2,13 +2,20 @@ import * as vscode from "vscode";
 import { ClaudeSessionDiscoveryService } from "./discovery";
 import { ClaudeTerminalService } from "./terminal";
 import { SessionTreeStateManager, SessionTreeViewProvider } from "./webview";
-import { SessionNode, SessionPromptNode } from "./models";
+import {
+  SessionNode,
+  SessionPromptNode,
+  truncateForTreeLabel,
+  buildSessionViewHtml,
+  md,
+  htmlDocument,
+  renderMessageBlock,
+  escapeHtml,
+  formatTimestamp
+} from "@sessions/core";
+export { escapeHtml } from "@sessions/core";
 import { registerSearchCommands } from "./search/searchCommand";
-import { truncateForTreeLabel } from "./utils/formatting";
 import { confirmAndDeleteSessions, confirmDangerousLaunch } from "./utils/sessionActions";
-import { buildSessionViewHtml } from "./sessionViewHtml";
-import { md, htmlDocument, renderMessageBlock, escapeHtml, formatTimestamp } from "./viewHtml";
-export { escapeHtml } from "./viewHtml";
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   const currentVersion = (

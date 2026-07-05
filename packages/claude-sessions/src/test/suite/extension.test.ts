@@ -1,7 +1,7 @@
 import * as assert from "assert";
 import * as vscode from "vscode";
 import { buildPromptPreviewHtml, escapeHtml } from "../../extension";
-import { SessionPromptNode } from "../../models";
+import { SessionPromptNode } from "@sessions/core";
 
 const EXTENSION_ID = "ShahadIshraq.vscode-claude-sessions";
 

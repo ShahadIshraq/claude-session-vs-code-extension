@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as readline from "readline";
 import { extractText, isDisplayableUserPrompt, isRecord } from "./content";
 import { buildTitle } from "./title";
-import { SessionPrompt } from "./types";
+import { SessionPrompt } from "@sessions/core";
 
 const MAX_RESPONSE_LENGTH = 50_000;
 

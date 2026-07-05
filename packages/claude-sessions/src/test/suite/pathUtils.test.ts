@@ -1,6 +1,6 @@
 import * as assert from "assert";
 import * as path from "path";
-import { isNormalizedPathWithin, isPathWithin, normalizeFsPath } from "../../discovery/pathUtils";
+import { isNormalizedPathWithin, isPathWithin, normalizeFsPath } from "@sessions/core";
 
 describe("isPathWithin", () => {
   it("returns true when candidate equals root exactly", () => {

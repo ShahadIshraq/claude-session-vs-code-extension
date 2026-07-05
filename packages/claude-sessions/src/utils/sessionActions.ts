@@ -1,6 +1,5 @@
 import * as vscode from "vscode";
-import { SessionNode } from "../models";
-import { ISessionDiscoveryService } from "../discovery/types";
+import { SessionNode, ISessionDiscoveryService } from "@sessions/core";
 import { SessionTreeStateManager } from "../webview/SessionTreeStateManager";
 import { deleteSession } from "../delete";
 

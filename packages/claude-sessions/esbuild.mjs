@@ -45,7 +45,12 @@ const ctx = await esbuild.context({
   sourcemap: true,
   minify: production,
   logLevel: "info",
-  outfile: "dist/extension.js"
+  outfile: "dist/extension.js",
+  // Resolve the workspace core package to its TypeScript source so the bundle
+  // is self-contained and does not require @sessions/core to be pre-compiled.
+  alias: {
+    "@sessions/core": path.resolve(__dirname, "../core/src/index.ts")
+  }
 });
 
 copyCodiconsAssets();

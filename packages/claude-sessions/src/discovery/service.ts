@@ -3,7 +3,7 @@ import { promises as fsp } from "fs";
 import * as os from "os";
 import * as path from "path";
 import * as vscode from "vscode";
-import { SessionNode } from "../models";
+import { SessionNode } from "@sessions/core";
 import { buildTitle } from "./title";
 import {
   CachedContentText,
@@ -14,7 +14,7 @@ import {
   SearchableEntry,
   SessionPrompt,
   TranscriptCandidate
-} from "./types";
+} from "@sessions/core";
 import { parseSessionContent } from "../search/parseContent";
 import { collectTranscriptFiles, exists } from "./scan";
 import { parseTranscriptFile, matchWorkspacePrecomputed, precomputeWorkspacePaths } from "./parseSession";

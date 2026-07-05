@@ -1,7 +1,12 @@
 import * as vscode from "vscode";
-import { SessionNode } from "../models";
-import { ISessionDiscoveryService, SessionPrompt } from "../discovery/types";
-import { formatAgeToken, truncateForTreeLabel, findHighlightRanges } from "../utils/formatting";
+import {
+  SessionNode,
+  ISessionDiscoveryService,
+  SessionPrompt,
+  formatAgeToken,
+  truncateForTreeLabel,
+  findHighlightRanges
+} from "@sessions/core";
 import { WebviewTreeState, WebviewWorkspaceGroup, WebviewSessionItem, WebviewPromptItem } from "./messages";
 
 export class SessionTreeStateManager {

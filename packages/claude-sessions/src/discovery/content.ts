@@ -1,4 +1,4 @@
-import { TranscriptRecord } from "./types";
+import { TranscriptRecord } from "@sessions/core";
 
 function extractTextFromBlock(block: Record<string, unknown>): string {
   if (typeof block.text === "string") {

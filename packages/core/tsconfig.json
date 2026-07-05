@@ -1,9 +1,12 @@
 {
   "compilerOptions": {
+    "composite": true,
     "module": "commonjs",
     "target": "ES2022",
     "outDir": "out",
     "lib": ["ES2022"],
+    "declaration": true,
+    "declarationMap": true,
     "sourceMap": true,
     "rootDir": "src",
     "strict": true,
@@ -13,6 +16,5 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true
   },
-  "references": [{ "path": "../core" }],
   "include": ["src"]
 }

@@ -1,4 +1,4 @@
-import { SessionTitleSourceOptions } from "./types";
+import { SessionTitleSourceOptions } from "@sessions/core";
 
 export function buildTitle(rawPrompt: string, sessionId: string): string {
   const firstLine = rawPrompt
