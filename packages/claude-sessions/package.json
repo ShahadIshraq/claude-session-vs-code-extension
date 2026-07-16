@@ -1,0 +1,211 @@
+{
+  "name": "vscode-claude-sessions",
+  "displayName": "Claude Sessions Explorer",
+  "description": "Browse and resume Claude Code sessions from the Explorer sidebar.",
+  "version": "0.3.1",
+  "publisher": "ShahadIshraq",
+  "license": "MIT",
+  "icon": "media/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ShahadIshraq/claude-session-vs-code-extension.git"
+  },
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onView:claudeSessionsExplorer",
+    "onView:claudeSessionsSidebarView"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "claudeSessions.refresh",
+        "title": "Refresh Claude Sessions",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "claudeSessions.openSession",
+        "title": "Open Claude Session",
+        "icon": {
+          "light": "media/terminal-green.svg",
+          "dark": "media/terminal-green.svg"
+        }
+      },
+      {
+        "command": "claudeSessions.openSessionDangerously",
+        "title": "Open Session (Skip Permissions)",
+        "icon": {
+          "light": "media/terminal-red.svg",
+          "dark": "media/terminal-red.svg"
+        }
+      },
+      {
+        "command": "claudeSessions.openPromptPreview",
+        "title": "Open Prompt Preview",
+        "icon": "$(book)"
+      },
+      {
+        "command": "claudeSessions.focusView",
+        "title": "Focus Claude Sessions View"
+      },
+      {
+        "command": "claudeSessions.search",
+        "title": "Search Claude Sessions",
+        "icon": "$(search)"
+      },
+      {
+        "command": "claudeSessions.clearFilter",
+        "title": "Clear Session Filter",
+        "icon": "$(close)"
+      },
+      {
+        "command": "claudeSessions.renameSession",
+        "title": "Rename Session",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "claudeSessions.deleteSession",
+        "title": "Delete Session",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "claudeSessions.toggleSelectionMode",
+        "title": "Toggle Selection Mode",
+        "icon": "$(checklist)"
+      },
+      {
+        "command": "claudeSessions.clearSelection",
+        "title": "Unselect All",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "claudeSessions.viewSession",
+        "title": "View Session",
+        "icon": "$(eye)"
+      }
+    ],
+    "views": {
+      "explorer": [
+        {
+          "id": "claudeSessionsExplorer",
+          "name": "Claude Sessions",
+          "type": "webview"
+        }
+      ],
+      "claudeSessionsContainer": [
+        {
+          "id": "claudeSessionsSidebarView",
+          "name": "Sessions",
+          "type": "webview"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "claudeSessionsContainer",
+          "title": "Claude Sessions",
+          "icon": "media/claude-sessions.svg"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "claudeSessions.refresh",
+          "when": "view == claudeSessionsExplorer",
+          "group": "navigation"
+        },
+        {
+          "command": "claudeSessions.refresh",
+          "when": "view == claudeSessionsSidebarView",
+          "group": "navigation"
+        },
+        {
+          "command": "claudeSessions.search",
+          "when": "view == claudeSessionsExplorer && !claudeSessions.filterActive",
+          "group": "navigation"
+        },
+        {
+          "command": "claudeSessions.search",
+          "when": "view == claudeSessionsSidebarView && !claudeSessions.filterActive",
+          "group": "navigation"
+        },
+        {
+          "command": "claudeSessions.toggleSelectionMode",
+          "when": "view == claudeSessionsExplorer",
+          "group": "navigation"
+        },
+        {
+          "command": "claudeSessions.clearSelection",
+          "when": "view == claudeSessionsExplorer && claudeSessions.hasCheckedSessions",
+          "group": "navigation"
+        },
+        {
+          "command": "claudeSessions.deleteSession",
+          "when": "view == claudeSessionsExplorer && claudeSessions.hasCheckedSessions",
+          "group": "navigation"
+        },
+        {
+          "command": "claudeSessions.toggleSelectionMode",
+          "when": "view == claudeSessionsSidebarView",
+          "group": "navigation"
+        },
+        {
+          "command": "claudeSessions.clearSelection",
+          "when": "view == claudeSessionsSidebarView && claudeSessions.hasCheckedSessions",
+          "group": "navigation"
+        },
+        {
+          "command": "claudeSessions.deleteSession",
+          "when": "view == claudeSessionsSidebarView && claudeSessions.hasCheckedSessions",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Claude Sessions",
+      "properties": {
+        "claudeSessions.confirmDangerousSkipPermissions": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show a required warning confirmation before launching Claude with --dangerously-skip-permissions."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run esbuild -- --production",
+    "esbuild": "node esbuild.mjs",
+    "esbuild:watch": "node esbuild.mjs --watch",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "copy-fixtures": "rm -rf out/test/fixtures && cp -r src/test/fixtures out/test/fixtures",
+    "pretest": "npm run compile && npm run esbuild && npm run copy-fixtures",
+    "test": "node ./out/test/runTest.js",
+    "test:coverage": "c8 node ./out/test/runTest.js",
+    "test:coverage:check": "c8 check-coverage --lines 60 --functions 60 --branches 60",
+    "package": "vsce package --no-dependencies"
+  },
+  "dependencies": {
+    "@vscode/codicons": "^0.0.36",
+    "markdown-it": "^14.1.1"
+  },
+  "devDependencies": {
+    "@types/markdown-it": "^14.1.2",
+    "@types/mocha": "^10.0.8",
+    "@types/node": "^20.14.10",
+    "@types/vscode": "^1.90.0",
+    "@vscode/test-electron": "^2.5.0",
+    "@vscode/vsce": "^3.2.0",
+    "c8": "^10.1.3",
+    "esbuild": "^0.24.0",
+    "mocha": "^11.7.5",
+    "typescript": "^5.6.2"
+  }
+}

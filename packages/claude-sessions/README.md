@@ -108,7 +108,9 @@ Click a prompt entry to open its full content in a read-only editor tab.
 
 ## Local Development
 
-1. Install dependencies:
+This extension lives in an npm-workspaces monorepo; run these from the repository root.
+
+1. Install dependencies (installs all workspaces):
 
 ```bash
 npm install
@@ -117,16 +119,16 @@ npm install
 2. Build once:
 
 ```bash
-npm run compile
+npm run -w packages/claude-sessions compile
 ```
 
 3. (Optional) watch mode while editing:
 
 ```bash
-npm run watch
+npm run -w packages/claude-sessions watch
 ```
 
-4. Open this folder in VS Code and press `F5` to launch the Extension Development Host.
+4. Open the repository root in VS Code and press `F5` to launch the Extension Development Host.
 
 5. In the Extension Host window:
 
@@ -158,13 +160,13 @@ Download the latest `.vsix` from [GitHub Releases](https://github.com/ShahadIshr
 
 ### Package as VSIX
 
-From the project root:
+From the repository root:
 
 ```bash
-npx @vscode/vsce package
+npm run -w packages/claude-sessions package
 ```
 
-This creates a `.vsix` file such as:
+This builds the production bundle and creates a `.vsix` file such as:
 
 - `vscode-claude-sessions-x.y.z.vsix`
 
@@ -179,9 +181,13 @@ In VS Code:
 
 ## Useful Commands
 
-- `npm run compile`
-- `npm run lint`
-- `npm run test`
+Run from the repository root:
+
+- `npm run -w packages/claude-sessions compile` — type-check / build
+- `npm run -w packages/claude-sessions test` — run the test suite
+- `npm run -w packages/claude-sessions package` — build a VSIX
+- `npm run lint` — lint all workspaces
+- `npm run format:check` — check formatting
 
 ## Notes
 

@@ -1,11 +1,65 @@
+# Scoped-tag release scheme: <prefix>-v<semver>
+#   claude-v0.3.2  → packages/claude-sessions
+#   codex-v1.0.0   → packages/codex-sessions
+#   pi-v1.0.0      → packages/pi-sessions
+#
+# All three extensions share the ShahadIshraq publisher, so a single
+# VSCE_PAT and OVSX_PAT covers all of them.
+#
+# NOTE: Before a new extension's first Open VSX publish, its namespace
+# must be created once manually at https://open-vsx.org.
+
 name: Release
 
 on:
   push:
-    tags: ["v*"]
+    tags:
+      - "claude-v*"
+      - "codex-v*"
+      - "pi-v*"
 
 jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    outputs:
+      package_dir: ${{ steps.parse.outputs.package_dir }}
+      prefix: ${{ steps.parse.outputs.prefix }}
+      version: ${{ steps.parse.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Parse tag and resolve package
+        id: parse
+        run: |
+          TAG="${{ github.ref_name }}"
+          # Split on the first occurrence of -v
+          PREFIX="${TAG%%-v*}"
+          VERSION="${TAG#*-v}"
+
+          case "$PREFIX" in
+            claude) PKG_DIR="packages/claude-sessions" ;;
+            codex)  PKG_DIR="packages/codex-sessions"  ;;
+            pi)     PKG_DIR="packages/pi-sessions"     ;;
+            *)
+              echo "Unknown prefix: $PREFIX"
+              exit 1
+              ;;
+          esac
+
+          echo "prefix=$PREFIX"    >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION"  >> "$GITHUB_OUTPUT"
+          echo "package_dir=$PKG_DIR" >> "$GITHUB_OUTPUT"
+
+          # Version guard: package.json version must match the tag version
+          PKG_VERSION=$(node -p "require('./$PKG_DIR/package.json').version")
+          if [ "$PKG_VERSION" != "$VERSION" ]; then
+            echo "ERROR: Tag version ($VERSION) does not match package.json version ($PKG_VERSION) in $PKG_DIR"
+            exit 1
+          fi
+          echo "Version guard passed: $PKG_DIR@$VERSION"
+
   build:
+    needs: resolve
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,56 +70,88 @@ jobs:
           cache: npm
 
       - run: npm ci
-      - run: npx vsce package
+
+      - name: Typecheck
+        run: npm run -w ${{ needs.resolve.outputs.package_dir }} compile
+
+      - name: Build production bundle
+        run: npm run -w ${{ needs.resolve.outputs.package_dir }} esbuild -- --production
+
+      - name: Package VSIX
+        working-directory: ${{ needs.resolve.outputs.package_dir }}
+        run: npx @vscode/vsce package --no-dependencies
 
       - uses: actions/upload-artifact@v4
         with:
-          name: vsix
-          path: "*.vsix"
+          name: ${{ needs.resolve.outputs.prefix }}-vsix
+          path: ${{ needs.resolve.outputs.package_dir }}/*.vsix
 
-  publish-ms-marketplace:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-
-      - run: npm ci
-
-      - run: npx vsce publish
-        env:
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
-
-  publish-openvsx:
-    needs: build
+  publish-marketplace:
+    needs: [resolve, build]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: vsix
+          name: ${{ needs.resolve.outputs.prefix }}-vsix
 
       - uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - run: npx ovsx publish *.vsix
+      - name: Publish to VS Code Marketplace
+        # Idempotent: a re-run after a partial failure must not hard-fail just
+        # because this version is already on the Marketplace.
+        run: |
+          set +e
+          OUT=$(npx @vscode/vsce publish --packagePath *.vsix 2>&1); CODE=$?
+          echo "$OUT"
+          if [ $CODE -ne 0 ] && echo "$OUT" | grep -qiE "already exists|already published"; then
+            echo "Version already published to the Marketplace — treating as success."
+            exit 0
+          fi
+          exit $CODE
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
+  publish-openvsx:
+    needs: [resolve, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.resolve.outputs.prefix }}-vsix
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Publish to Open VSX
+        # Idempotent: tolerate re-runs where this version is already published.
+        run: |
+          set +e
+          OUT=$(npx ovsx publish *.vsix 2>&1); CODE=$?
+          echo "$OUT"
+          if [ $CODE -ne 0 ] && echo "$OUT" | grep -qiE "already exists|already published"; then
+            echo "Version already published to Open VSX — treating as success."
+            exit 0
+          fi
+          exit $CODE
         env:
           OVSX_PAT: ${{ secrets.OVSX_PAT }}
 
   github-release:
-    needs: build
+    # Only cut the GitHub release once both registries have accepted the VSIX,
+    # so a failed publish can't leave a half-published release behind.
+    needs: [resolve, build, publish-marketplace, publish-openvsx]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: vsix
+          name: ${{ needs.resolve.outputs.prefix }}-vsix
 
       - uses: softprops/action-gh-release@v2
         with:
           files: "*.vsix"
+          name: ${{ github.ref_name }}

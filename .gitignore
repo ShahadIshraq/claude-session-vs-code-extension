@@ -1,6 +1,10 @@
-out
+**/out
+**/dist
 node_modules
+**/node_modules
 .vscode-test
+**/.vscode-test
 *.vsix
 coverage
+**/coverage
 .claude/settings.local.json

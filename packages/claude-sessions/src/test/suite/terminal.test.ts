@@ -213,7 +213,7 @@ describe("executeInTerminal", () => {
     const si = createMockShellIntegration();
     const terminal = createMockTerminal(si);
     let subscribeCalled = false;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
     const subscribe = ((_cb: unknown) => {
       subscribeCalled = true;
       return { dispose: () => {} };

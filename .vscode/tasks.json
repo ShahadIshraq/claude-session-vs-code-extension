@@ -2,16 +2,28 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "esbuild: build extension",
       "type": "npm",
-      "script": "watch",
-      "problemMatcher": "$tsc-watch",
-      "isBackground": true,
+      "script": "esbuild",
+      "path": "packages/claude-sessions",
+      "problemMatcher": [],
       "presentation": {
-        "reveal": "never"
+        "reveal": "silent"
       },
       "group": {
         "kind": "build",
         "isDefault": true
+      }
+    },
+    {
+      "label": "tsc: typecheck watch",
+      "type": "npm",
+      "script": "watch",
+      "path": "packages/claude-sessions",
+      "problemMatcher": "$tsc-watch",
+      "isBackground": true,
+      "presentation": {
+        "reveal": "never"
       }
     }
   ]

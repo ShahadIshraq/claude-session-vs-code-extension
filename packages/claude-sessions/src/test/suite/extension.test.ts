@@ -3,6 +3,33 @@ import * as vscode from "vscode";
 import { buildPromptPreviewHtml, escapeHtml } from "../../extension";
 import { SessionPromptNode } from "../../models";
 
+const EXTENSION_ID = "ShahadIshraq.vscode-claude-sessions";
+
+describe("extension activation", () => {
+  // Loads and activates the *shipped* entrypoint (package.json "main" =
+  // ./dist/extension.js, the esbuild bundle), so a bundle that is missing or
+  // throws on activation fails here — the plain unit tests only exercise out/.
+  it("activates from the bundled entrypoint and registers its commands", async () => {
+    const ext = vscode.extensions.getExtension(EXTENSION_ID);
+    assert.ok(ext, `extension ${EXTENSION_ID} should be present in the test host`);
+
+    await ext!.activate();
+    assert.strictEqual(ext!.isActive, true, "extension should be active after activate()");
+
+    const registered = await vscode.commands.getCommands(true);
+    for (const command of [
+      "claudeSessions.refresh",
+      "claudeSessions.openSession",
+      "claudeSessions.search",
+      "claudeSessions.viewSession",
+      "claudeSessions.renameSession",
+      "claudeSessions.deleteSession"
+    ]) {
+      assert.ok(registered.includes(command), `command not registered: ${command}`);
+    }
+  });
+});
+
 describe("escapeHtml", () => {
   it("escapes ampersand", () => {
     assert.strictEqual(escapeHtml("a&b"), "a&amp;b");
