@@ -1,5 +1,6 @@
 {
   "reporter": ["text", "lcov"],
-  "include": ["out/**/*.js", "../core/out/**/*.js"],
-  "exclude": ["out/test/**", "../core/out/index.js"]
+  "allowExternal": true,
+  "include": ["**/claude-sessions/out/**/*.js", "**/core/out/**/*.js"],
+  "exclude": ["**/out/test/**", "**/core/out/index.js"]
 }
