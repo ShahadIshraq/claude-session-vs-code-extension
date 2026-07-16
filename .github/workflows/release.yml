@@ -99,7 +99,17 @@ jobs:
           node-version: 20
 
       - name: Publish to VS Code Marketplace
-        run: npx @vscode/vsce publish --packagePath *.vsix
+        # Idempotent: a re-run after a partial failure must not hard-fail just
+        # because this version is already on the Marketplace.
+        run: |
+          set +e
+          OUT=$(npx @vscode/vsce publish --packagePath *.vsix 2>&1); CODE=$?
+          echo "$OUT"
+          if [ $CODE -ne 0 ] && echo "$OUT" | grep -qiE "already exists|already published"; then
+            echo "Version already published to the Marketplace — treating as success."
+            exit 0
+          fi
+          exit $CODE
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
 
@@ -116,12 +126,23 @@ jobs:
           node-version: 20
 
       - name: Publish to Open VSX
-        run: npx ovsx publish *.vsix
+        # Idempotent: tolerate re-runs where this version is already published.
+        run: |
+          set +e
+          OUT=$(npx ovsx publish *.vsix 2>&1); CODE=$?
+          echo "$OUT"
+          if [ $CODE -ne 0 ] && echo "$OUT" | grep -qiE "already exists|already published"; then
+            echo "Version already published to Open VSX — treating as success."
+            exit 0
+          fi
+          exit $CODE
         env:
           OVSX_PAT: ${{ secrets.OVSX_PAT }}
 
   github-release:
-    needs: [resolve, build]
+    # Only cut the GitHub release once both registries have accepted the VSIX,
+    # so a failed publish can't leave a half-published release behind.
+    needs: [resolve, build, publish-marketplace, publish-openvsx]
     runs-on: ubuntu-latest
     permissions:
       contents: write

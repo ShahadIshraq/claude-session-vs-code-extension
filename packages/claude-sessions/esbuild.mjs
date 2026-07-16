@@ -15,12 +15,22 @@ function copyCodiconsAssets() {
   const codiconsDistDir = path.join(path.dirname(codiconsPkgJson), "dist");
 
   const destDir = path.join(__dirname, "dist", "codicons");
-  if (!fs.existsSync(destDir)) {
-    fs.mkdirSync(destDir, { recursive: true });
-  }
+  fs.mkdirSync(destDir, { recursive: true });
 
   for (const file of ["codicon.css", "codicon.ttf"]) {
-    fs.copyFileSync(path.join(codiconsDistDir, file), path.join(destDir, file));
+    const src = path.join(codiconsDistDir, file);
+    const dest = path.join(destDir, file);
+    // Fail loudly if the upstream layout changed — the webview renders no icons
+    // without these, and the bundle would otherwise ship broken silently.
+    if (!fs.existsSync(src)) {
+      throw new Error(
+        `Codicons asset "${file}" not found at ${src}. The @vscode/codicons package layout may have changed; update copyCodiconsAssets() in esbuild.mjs.`
+      );
+    }
+    fs.copyFileSync(src, dest);
+    if (!fs.existsSync(dest)) {
+      throw new Error(`Failed to copy codicons asset "${file}" to ${dest}.`);
+    }
     console.log(`Copied ${file} → dist/codicons/`);
   }
 }
