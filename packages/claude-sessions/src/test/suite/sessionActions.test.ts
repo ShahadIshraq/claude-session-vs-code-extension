@@ -1,7 +1,6 @@
 import * as assert from "assert";
 import * as vscode from "vscode";
-import { SessionNode } from "../../models";
-import { ISessionDiscoveryService, SessionPrompt } from "../../discovery/types";
+import { SessionNode, ISessionDiscoveryService, SessionPrompt } from "@sessions/core";
 import { SessionTreeStateManager } from "../../webview/SessionTreeStateManager";
 
 // ---------------------------------------------------------------------------

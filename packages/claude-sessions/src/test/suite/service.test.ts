@@ -4,7 +4,7 @@ import * as path from "path";
 import { promises as fsp } from "fs";
 import * as vscode from "vscode";
 import { ClaudeSessionDiscoveryService } from "../../discovery/service";
-import type { SessionNode } from "../../models";
+import type { SessionNode } from "@sessions/core";
 
 // ---------------------------------------------------------------------------
 // Helpers

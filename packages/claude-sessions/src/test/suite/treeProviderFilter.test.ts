@@ -1,5 +1,5 @@
 import * as assert from "assert";
-import { findHighlightRanges } from "../../utils/formatting";
+import { findHighlightRanges } from "@sessions/core";
 
 describe("findHighlightRanges", () => {
   it("returns correct ranges for a single match", () => {

@@ -2,9 +2,9 @@ import * as fs from "fs";
 import * as readline from "readline";
 import * as vscode from "vscode";
 import { extractText, isDisplayableUserPrompt, isRecord } from "./content";
-import { isNormalizedPathWithin, isPathWithin, normalizeFsPath } from "./pathUtils";
+import { isNormalizedPathWithin, isPathWithin, normalizeFsPath } from "@sessions/core";
 import { chooseSessionTitleRaw, toNonEmptySingleLine } from "./title";
-import { ParsedSession } from "./types";
+import { ParsedSession } from "@sessions/core";
 
 export async function parseTranscriptFile(
   transcriptPath: string,

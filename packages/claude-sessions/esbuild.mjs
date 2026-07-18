@@ -45,7 +45,16 @@ const ctx = await esbuild.context({
   sourcemap: true,
   minify: production,
   logLevel: "info",
-  outfile: "dist/extension.js"
+  outfile: "dist/extension.js",
+  // Resolve the workspace core package to its TypeScript source so the bundle
+  // is self-contained and does not require @sessions/core to be pre-compiled.
+  // Note: this bundles core from ../core/src, while the test/Node runtime
+  // resolves @sessions/core to ../core/out (built by `tsc -b`). They stay in
+  // sync because `pretest` runs `compile` before `esbuild`; keep that ordering
+  // so the shipped bundle and the tested code never diverge.
+  alias: {
+    "@sessions/core": path.resolve(__dirname, "../core/src/index.ts")
+  }
 });
 
 copyCodiconsAssets();

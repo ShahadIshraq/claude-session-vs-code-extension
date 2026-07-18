@@ -1,7 +1,5 @@
 import * as assert from "assert";
-import { buildSessionViewHtml } from "../../sessionViewHtml";
-import { SessionNode } from "../../models";
-import { SessionPrompt } from "../../discovery/types";
+import { buildSessionViewHtml, SessionNode, SessionPrompt } from "@sessions/core";
 
 function makeSession(overrides: Partial<SessionNode> = {}): SessionNode {
   return {

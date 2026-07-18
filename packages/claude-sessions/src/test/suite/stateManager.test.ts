@@ -1,7 +1,6 @@
 import * as assert from "assert";
 import { SessionTreeStateManager } from "../../webview/SessionTreeStateManager";
-import { ISessionDiscoveryService, SessionPrompt } from "../../discovery/types";
-import { SessionNode } from "../../models";
+import { ISessionDiscoveryService, SessionPrompt, SessionNode } from "@sessions/core";
 
 // ---------------------------------------------------------------------------
 // Helpers

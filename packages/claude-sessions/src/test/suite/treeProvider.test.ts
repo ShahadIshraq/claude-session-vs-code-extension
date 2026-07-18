@@ -1,5 +1,5 @@
 import * as assert from "assert";
-import { formatAgeToken, formatRelativeTime, truncateForTreeLabel } from "../../utils/formatting";
+import { formatAgeToken, formatRelativeTime, truncateForTreeLabel } from "@sessions/core";
 
 // ---------------------------------------------------------------------------
 // formatRelativeTime tests

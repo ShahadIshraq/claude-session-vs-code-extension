@@ -183,8 +183,8 @@
     "vscode:prepublish": "npm run esbuild -- --production",
     "esbuild": "node esbuild.mjs",
     "esbuild:watch": "node esbuild.mjs --watch",
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
+    "compile": "tsc -b",
+    "watch": "tsc -b -w",
     "copy-fixtures": "rm -rf out/test/fixtures && cp -r src/test/fixtures out/test/fixtures",
     "pretest": "npm run compile && npm run esbuild && npm run copy-fixtures",
     "test": "node ./out/test/runTest.js",
@@ -193,11 +193,10 @@
     "package": "vsce package --no-dependencies"
   },
   "dependencies": {
-    "@vscode/codicons": "^0.0.36",
-    "markdown-it": "^14.1.1"
+    "@sessions/core": "*",
+    "@vscode/codicons": "^0.0.36"
   },
   "devDependencies": {
-    "@types/markdown-it": "^14.1.2",
     "@types/mocha": "^10.0.8",
     "@types/node": "^20.14.10",
     "@types/vscode": "^1.90.0",
